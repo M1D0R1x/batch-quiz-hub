@@ -1,0 +1,1255 @@
+Getting Started with Oracle APEX on the Oracle
+Autonomous Database
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+3
+
+1
+
+75%
+
+Question 1 · Getting Started with Oracle APEX on the Oracle Autonomous Database
+Answered Incorrectly
+
+Which two are true about Oracle APEX?
+A. Requires no additional client software. A web browser is the app development IDE. (Correct
+Answer)
+B. Is declarative. It requires no code generation. (Correct – Your Answer)
+C. Requires developers to be proficient in Java, Python and other programming languages. (Your
+Answer)
+D. Performs the data processing in a middle-tier server
+Explanation
+Correct
+
+Question 2 · Getting Started with Oracle APEX on the Oracle Autonomous Database
+Answered Correctly
+
+<p>You can create an APEX workspace and build APEX apps on which of the following platforms?
+</p>
+A. Oracle Autonomous Cloud
+B. Oracle XE
+C. Amazon RDS
+D. Microsoft Azure
+E. All of the above (Correct – Your Answer)
+Explanation
+<p>Correct</p>
+
+Question 3 · Getting Started with Oracle APEX on the Oracle Autonomous Database
+Answered Correctly
+
+Which three are the main components of APEX workspace homepage?
+A. SQL Workshop (Correct – Your Answer)
+B. App Builder (Correct – Your Answer)
+C. Gallery (Correct – Your Answer)
+D. RESTful Services
+Explanation
+Correct
+
+Question 4 · Getting Started with Oracle APEX on the Oracle Autonomous Database
+Answered Correctly
+
+Which two among the following are TRUE about Low Code Apps?
+A. Provide Rich Functionality with Less Code (Correct – Your Answer)
+B. Expensive
+C. Scalable (Correct – Your Answer)
+D. Not Mobile Friendly
+Explanation
+Correct
+
+Using SQL Workshop
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+2
+
+2
+
+50%
+
+Question 1 · Using SQL Workshop
+Answered Incorrectly
+
+Which component in SQL Workshop allows you to build queries graphically without manual SQL
+coding?
+A. Quick SQL
+B. SQL commands (Your Answer)
+C. Query Builder (Correct Answer)
+D. Data Workshop
+Explanation
+Correct!
+
+Question 2 · Using SQL Workshop
+Answered Correctly
+
+From SQL Workshop, you can perform which two of the following actions?
+A. Create an APEX user
+B. Run SQL commands and scripts (Correct – Your Answer)
+C. Create and view database objects (Correct – Your Answer)
+D. Delete database
+Explanation
+Correct
+
+Question 3 · Using SQL Workshop
+
+Answered Incorrectly
+
+What three are the result of the following QuickSQL shorthand notation do?
+<br><pre>departments /insert 4
+<br> name /nn
+<br> location
+<br> country</pre>
+A. Create the departments table with 4 columns (Correct Answer)
+B. Creates an id column as a primary key (Correct – Your Answer)
+C. Create the departments table with 3 columns (Your Answer)
+D. Inserts 4 rows of random data into the departments table (Correct – Your Answer)
+Explanation
+Correct!
+
+Question 4 · Using SQL Workshop
+Answered Correctly
+
+Using Data Workshop, you can perform which three tasks:
+A. Delete data from the database
+B. Load vast amount of data into the database (Correct – Your Answer)
+C. Load data using various file formats such as XLSX, CSV, XML, and JSON (Correct – Your Answer)
+D. Export vast amount of data from the database into a file (Correct – Your Answer)
+Explanation
+Correct
+
+Creating a Database Application
+5 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+5
+
+1
+
+4
+
+20%
+
+Question 1 · Creating a Database Application
+Answered Incorrectly
+
+Using the App Builder component, you can perform which three tasks?
+A. Install a sample App (Correct – Your Answer)
+B. Create a new App (Correct Answer)
+C. Edit pages in the page designer (Correct – Your Answer)
+D. Run SQL scripts and commands (Your Answer)
+Explanation
+Correct
+
+Question 2 · Creating a Database Application
+Answered Correctly
+
+Choose the two correct statements about PWA.
+A. Provides a customizable offline page when users are offline and cannot request the network.
+(Correct – Your Answer)
+B. Enables users to install the application on devices (Correct – Your Answer)
+C. To download the app as PWA, one must visit the App Store
+D. An exisitng APEX app cannot be made a PWA
+Explanation
+Correct
+
+Question 3 · Creating a Database Application
+
+Answered Incorrectly
+
+Which three of the following options are TRUE about a page in an APEX application?
+A. An APEX application can have only one page. (Your Answer)
+B. To view the rendered version of the page, you run or submit it to the Oracle APEX engine. (Correct –
+Your Answer)
+C. A page can contain buttons, page items and regions. (Correct Answer)
+D. A page can be viewed and edited in the Page Designer. (Correct – Your Answer)
+Explanation
+Correct
+
+Question 4 · Creating a Database Application
+Answered Incorrectly
+
+Choose the two statements that are TRUE about the Universal Theme in APEX.
+A. The developers must have extensive knowledge about Javascript, CSS and HTML in order to use the
+Universal Theme. (Your Answer)
+B. Responsive UI (Correct – Your Answer)
+C. Easy customization (Correct Answer)
+D. Not designed to work on tablets
+Explanation
+Correct
+
+Question 5 · Creating a Database Application
+Answered Incorrectly
+
+Choose the three correct options in the given friendly URL syntax: https://example.com:5500/
+ords/r/mycompany/hr-app/update-employees?session=13766599855150
+A. update-employees is the PL/SQL procedure to update the employee details. (Your Answer)
+B. mycompany is the path-prefix which is by default the workspace name (Correct – Your Answer)
+C. 13766599855150 is the session ID. A new ID is generated for each session. (Correct Answer)
+D. hr-app is the application alias. (Correct – Your Answer)
+
+Explanation
+Correct
+
+Working with Pages and Regions
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+2
+
+2
+
+50%
+
+Question 1 · Working with Pages and Regions
+Answered Incorrectly
+
+Choose the three different ways in which you can add a checkbox to a page.
+A. Add a checkbox from the Property Editor (Your Answer)
+B. Drag and drop the checkbox item into the Layout pane (Correct – Your Answer)
+C. Right click Body in the Rendering Tree and add a New Page Item as Checkbox Type. (Correct – Your
+Answer)
+D. Use the context sensitive menu in the Gallery pane. (Correct Answer)
+Explanation
+Correct
+
+Question 2 · Working with Pages and Regions
+Answered Correctly
+
+<p>Choose from the following the different kinds of page components you can create in APEX.</
+p>
+A. Interactive Grid
+B. Smart Filters
+C. Search Page
+D. Faceted Search
+E. All of them (Correct – Your Answer)
+Explanation
+<p>Correct</p>
+
+Question 3 · Working with Pages and Regions
+Answered Correctly
+
+When a button is pressed, an overlay window is positioned within the viewport. What kind of page
+mode is it?
+A. Normal Page
+B. Modal Dialog (Correct – Your Answer)
+C. Help Page
+D. Non-Modal Dialog
+Explanation
+Correct
+
+Question 4 · Working with Pages and Regions
+Answered Incorrectly
+
+The Page Designer Toolbar allows you to perform which two of the following actions?
+A. Delete the application (Your Answer)
+B. Navigate to Shared Components (Correct – Your Answer)
+C. Export the application
+D. Create a new page (Correct Answer)
+Explanation
+Correct
+
+Developing Reports
+5 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+5
+
+1
+
+4
+
+20%
+
+Question 1 · Developing Reports
+Answered Incorrectly
+
+I want to hide a few columns in my interactive report. To do so, which option should I choose
+from the Actions menu?
+A. Format
+B. Data (Your Answer)
+C. Columns (Correct Answer)
+D. Filter
+Explanation
+Correct
+
+Question 2 · Developing Reports
+Answered Correctly
+
+Which two of the following capabilities are TRUE for both Interactive Report and Interactive Grid?
+A. End user can rearrange the report interactively using the mouse.
+B. End user can save the report (Correct – Your Answer)
+C. End user can customize how and what data is displayed. (Correct – Your Answer)
+D. End user can add, modify, and refresh data directly on the report.
+Explanation
+Correct
+
+Question 3 · Developing Reports
+
+Answered Incorrectly
+
+In a Classic Report, an end user can perform which one of the following actions?
+A. Rearrange the columns in the report.
+B. Filter values of a column in the report. (Your Answer)
+C. Create Control Breaks in the report.
+D. Sort the columns of the report. (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Developing Reports
+Answered Incorrectly
+
+You can create a report in which of the three following methods?
+A. Create a report as a new page in an application (Correct – Your Answer)
+B. Create a report from Object Browser (Your Answer)
+C. Create a report region on a page in an application (Correct – Your Answer)
+D. Create a report when you create a new database application (Correct Answer)
+Explanation
+Correct
+
+Question 5 · Developing Reports
+Answered Incorrectly
+
+Which two types of pages behave similarly in functionality?
+A. Smart Filter (Correct – Your Answer)
+B. Cards (Your Answer)
+C. Faceted Search (Correct Answer)
+D. Map
+Explanation
+
+Correct
+
+Managing and Customising Interactive Reports
+5 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+5
+
+0
+
+5
+
+0%
+
+Question 1 · Managing and Customising Interactive Reports
+Answered Incorrectly
+
+Choose the two options provided in a Column Heading menu of an Interactive Report.
+A. Group By (Your Answer)
+B. Delete (Your Answer)
+C. Control Break (Correct Answer)
+D. Hide (Correct Answer)
+Explanation
+Correct
+
+Question 2 · Managing and Customising Interactive Reports
+Answered Incorrectly
+
+To highlight certain rows in the interactive report based on a condition, you must:
+A. Edit the rows in the report and select a color (Your Answer)
+B. Rows cannot be highlighted in an Interactive report
+C. Provide a conditional SQL query
+D. Choose a condition in Format &gt; Highlight (Correct Answer)
+Explanation
+Correct
+
+Question 3 · Managing and Customising Interactive Reports
+
+Answered Incorrectly
+
+Choose the three types of aggregations you can apply on a column.
+A. Count (Correct Answer)
+B. Sum (Correct – Your Answer)
+C. Average (Correct – Your Answer)
+D. Standard Deviation (Your Answer)
+Explanation
+Correct
+
+Question 4 · Managing and Customising Interactive Reports
+Answered Incorrectly
+
+Which two of the following types can an end user save the customized Interactive report as?
+A. A private report (Correct – Your Answer)
+B. Cannot save the report (Your Answer)
+C. A Public report (Correct Answer)
+D. Default report
+Explanation
+Correct
+
+Question 5 · Managing and Customising Interactive Reports
+Answered Incorrectly
+
+Choose the two statements that are TRUE about an Interactive Report. As a developer:
+A. You can customize the pagination (Correct – Your Answer)
+B. You can modify the data in the report after running the app (Your Answer)
+C. You cannot modify the report source query
+D. You can customize the Actions menu to include or exclude certain options. (Correct Answer)
+Explanation
+
+Correct
+
+Creating Application Page Controls
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+2
+
+2
+
+50%
+
+Question 1 · Creating Application Page Controls
+Answered Incorrectly
+
+Choose from the below options the actions that can be performed when a button is clicked.
+A. All of them (Correct Answer)
+B. Redirect to a page in the same application
+C. Redirect to a page in a different application
+D. Submit Page (Your Answer)
+E. Redirect to a URL
+Explanation
+Correct
+
+Question 2 · Creating Application Page Controls
+Answered Correctly
+
+Choose the three types of page items that can be placed on a page.
+A. Global variable
+B. Checkbox (Correct – Your Answer)
+C. Select List (Correct – Your Answer)
+D. Date Picker (Correct – Your Answer)
+Explanation
+Correct
+
+Question 3 · Creating Application Page Controls
+Answered Correctly
+
+What are the three types of List of Values(LOV) you can create on a page?
+A. Cascading LOV (Correct – Your Answer)
+B. Static LOV (Correct – Your Answer)
+C. Dynamic LOV (Correct – Your Answer)
+D. Popup LOV
+Explanation
+Correct
+
+Question 4 · Creating Application Page Controls
+Answered Incorrectly
+
+Let's say that there are two select lists on a page. Making a selection in the DEPARTMENT select
+list, determines which individuals display in the Employees select list. This type of LOV is called:
+A. Dynamic LOV
+B. Popup LOV (Your Answer)
+C. Static LOV
+D. Cascading LOV (Correct Answer)
+Explanation
+Correct
+
+Enhancing your application using Computations,
+Processes and Validations
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+0
+
+4
+
+0%
+
+Question 1 · Enhancing your application using Computations, Processes and Validations
+Answered Incorrectly
+
+A Page Computation can be created from which two of the following tabs?
+A. Dynamic Actions (Your Answer)
+B. Shared Components (Your Answer)
+C. Rendering Tree (Correct Answer)
+D. Processing (Correct Answer)
+Explanation
+Correct
+
+Question 2 · Enhancing your application using Computations, Processes and Validations
+Answered Incorrectly
+
+Consider a customers report. A customer name is clicked in the report to display the Customer
+Details form. When the items in the form dialog are updated and the user clicks Apply Changes,
+the page process is executed and the items from the page are used to update and commit the
+underlying table in the Oracle Database. What are the two types of events that occurred in this
+scenario?
+A. Page Rendering (Correct – Your Answer)
+B. Page Validation (Your Answer)
+C. Page Refresh
+D. Page Processing (Correct Answer)
+Explanation
+
+Correct
+
+Question 3 · Enhancing your application using Computations, Processes and Validations
+Answered Incorrectly
+
+When you run an application, the APEX engine relies on which two processes?
+A. Validate Page (Your Answer)
+B. Run Page (Your Answer)
+C. Accept page (Correct Answer)
+D. Show Page (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Enhancing your application using Computations, Processes and Validations
+Answered Incorrectly
+
+When you click a Customer Name in the Customers report, the Customer Details form dialog
+page is displayed. What are the events that occur in this scenario?
+A. Page Rendering (Correct Answer)
+B. Page rendering and processing (Your Answer)
+C. Page Processing
+D. Page compilation
+Explanation
+Correct
+
+Creating and Using Dynamic Actions
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+0
+
+4
+
+0%
+
+Question 1 · Creating and Using Dynamic Actions
+Answered Incorrectly
+
+Which two statements are TRUE about Dynamic Actions?
+A. It is not possible to debug Dynamic Actions from the Developer Toolbar (Your Answer)
+B. More dynamic actions you add to a page, the greater your overall page size. (Correct – Your
+Answer)
+C. Dynamic actions provide a way to define complex client-side behaviour declaratively without the
+need for JavaScript. (Correct Answer)
+D. Dynamic Actions require complex client side Javascript code.
+Explanation
+Correct
+
+Question 2 · Creating and Using Dynamic Actions
+Answered Incorrectly
+
+In an Employee form, the 'Commission' and 'Hire Date' fields are enabled only if the Job is
+'Salesman'. This can be achieved by which feature of APEX?
+A. PL/SQL procedure
+B. Conditional SQL (Your Answer)
+C. Processing
+D. Dynamic Actions (Correct Answer)
+Explanation
+Correct
+
+Question 3 · Creating and Using Dynamic Actions
+Answered Incorrectly
+
+To create a Dynamic Action, you need to specify which three of the following options?
+A. Why the action is performed (Your Answer)
+B. When the action occurs (Correct – Your Answer)
+C. What elements are affected by the action (Correct – Your Answer)
+D. What action or actions are performed (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Creating and Using Dynamic Actions
+Answered Incorrectly
+
+When you create a Dynamic Action, you specify the event that causes the dynamic action to fire.
+Choose the categories these events are classified into.
+A. Component Events
+B. Browser Events (Your Answer)
+C. Custom Events
+D. All of them (Correct Answer)
+E. Framework Events
+Explanation
+Correct
+
+Migrating Application Development Between Environments
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+1
+
+3
+
+25%
+
+Question 1 · Migrating Application Development Between Environments
+Answered Incorrectly
+
+Select the two advantages of using One-click Remote Deployment.
+A. You need to access your production environment to import the app directly.
+B. Directly deploy your app definition along with the objects from the source system to the target
+system (Correct – Your Answer)
+C. Simplify the process of deploying an application (Correct Answer)
+D. Deploy the app, and explicitly install the supporting objects in one-click.
+Explanation
+Correct
+
+Question 2 · Migrating Application Development Between Environments
+Answered Incorrectly
+
+What are the two primary ways to move database objects and data from one environment to
+another, for a single application?
+A. Oracle SQL Developer (Correct – Your Answer)
+B. SQL Workshop (Correct Answer)
+C. App Builder
+D. Page Designer
+Explanation
+Correct
+
+Question 3 · Migrating Application Development Between Environments
+
+Answered Incorrectly
+
+What three components must be considered while migrating an APEX app between
+environments?
+A. Move the application definition and all associated files (Correct – Your Answer)
+B. Move the database objects (Correct Answer)
+C. Move the sessions data
+D. Move the images (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Migrating Application Development Between Environments
+Answered Correctly
+
+While migrating apps, once the database objects are created in the target environment, you can
+load the data using which of the components?
+A. Data Generator
+B. Quick SQL
+C. Data Workshop (Correct – Your Answer)
+D. App Builder
+Explanation
+Correct
+
+Adding Additional Pages to your Application
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+0
+
+4
+
+0%
+
+Question 1 · Adding Additional Pages to your Application
+Answered Incorrectly
+
+Choose the three supported spatial geometry objects in Maps.
+A. Bars
+B. Points (Correct Answer)
+C. Polygons (Correct Answer)
+D. Heat map (Correct – Your Answer)
+Explanation
+Correct
+
+Question 2 · Adding Additional Pages to your Application
+Answered Incorrectly
+
+What are the three features of a calendar in APEX?
+A. Reminders - Displays the reminders set by the users
+B. Month, Week, Day - Displays a monthly, weekly and daily view. (Correct – Your Answer)
+C. Previous - Navigates to the previous month. (Correct Answer)
+D. Next - Navigates to the next month. (Correct Answer)
+Explanation
+Correct
+
+Question 3 · Adding Additional Pages to your Application
+
+Answered Incorrectly
+
+What are the required fields while creating a Chart in APEX?
+A. Value Column
+B. Data Source
+C. Label Column (Your Answer)
+D. Name
+E. All of them (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Adding Additional Pages to your Application
+Answered Incorrectly
+
+Choose the three correct statements about Charts in APEX.
+A. You can visualize data as bar, line, area, range, combination, scatter, bubble, polar, radar, pie, donut,
+funnel and more (Correct Answer)
+B. You can create charts without using Oracle JET
+C. Each Oracle JET visualization supports animation, accessibility, responsive layout,
+internationalization, test automation, and a range of inter activity features. (Correct – Your Answer)
+D. Oracle APEX supports charts based on the Oracle JavaScript Extension Toolkit (Oracle JET) Data
+Visualizations. (Correct Answer)
+Explanation
+Correct
+
+Implementing Security in your Application
+5 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+5
+
+0
+
+5
+
+0%
+
+Question 1 · Implementing Security in your Application
+Answered Incorrectly
+
+<p>Which of the following are preconfigured authentication schemes?</p>
+A. LDAP Directory
+B. Social Sign In
+C. Open Door Credentials
+D. HTTP Header Variables (Your Answer)
+E. All of them (Correct Answer)
+Explanation
+<p>Correct</p>
+
+Question 2 · Implementing Security in your Application
+Answered Incorrectly
+
+When you create an Access Control Page, which three of the following Access Roles get created?
+A. Administrator (Correct – Your Answer)
+B. Reader (Correct Answer)
+C. Contributor (Correct Answer)
+D. Developer
+Explanation
+Correct
+
+Question 3 · Implementing Security in your Application
+Answered Incorrectly
+
+The APEX engine uses which component as a key for tracking each user's session state?
+A. LDAP_USER
+B. APP_USER (Correct Answer)
+C. APEX_USER (Your Answer)
+D. HTTP_USER
+Explanation
+Correct
+
+Question 4 · Implementing Security in your Application
+Answered Incorrectly
+
+In APEX, you can choose which three of the following Authentication methods?
+A. Custom Authentication Scheme (Correct Answer)
+B. Authorization Scheme
+C. No Authentication (Correct Answer)
+D. Built-in Authentication Scheme (Correct – Your Answer)
+Explanation
+Correct
+
+Question 5 · Implementing Security in your Application
+Answered Incorrectly
+
+You can apply an authorization scheme for which three of the following components?
+A. A page (Correct Answer)
+B. An entire application (Correct Answer)
+C. A session
+D. Specific control such as region,item or button (Correct – Your Answer)
+
+Explanation
+Correct
+
+Managing Application Data
+5 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+5
+
+0
+
+5
+
+0%
+
+Question 1 · Managing Application Data
+Answered Incorrectly
+
+Which three of the following statements are TRUE about Data Synchronization?
+A. You must trigger Data Synchronization manually
+B. Helps in Providing efficient reporting on large data sets coming from a REST service (Correct
+Answer)
+C. APEX can create the local table based on the visible columns in the REST Data Source Data Profile.
+(Correct Answer)
+D. Data Synchronization enables developers to automatically sync the contents of a local table with the
+data from a REST service. (Correct – Your Answer)
+Explanation
+Correct
+
+Question 2 · Managing Application Data
+Answered Incorrectly
+
+What three are the key features of Data Load Definition?
+A. The APEX_DATA_LOADING PL/SQL API is available for custom processing. (Correct Answer)
+B. Easy workflow for end users: upload the file, verify the preview, and load data (Correct – Your
+Answer)
+C. Column mapping occurs at design time, removing the burden on end users. (Correct Answer)
+D. Only XML data format can be loaded to tables or collections
+Explanation
+Correct
+
+Question 3 · Managing Application Data
+Answered Incorrectly
+
+Choose the three requirements for creating a REST Enabled SQL Reference.
+A. Configure and enable the REST Enabled SQL service feature (Correct Answer)
+B. Install Oracle REST Data Services (ORDS) 19.x or later. (Correct Answer)
+C. Activate REST Enabled SQL for the target schema on the remote database (Correct – Your Answer)
+D. Set up any remote database
+Explanation
+Correct
+
+Question 4 · Managing Application Data
+Answered Incorrectly
+
+What three are the uses of Collections in APEX?
+A. Collections can be accessed, manipulated, or processed during a user's specific session. (Correct
+Answer)
+B. Use collections to temporarily capture one or more nonscalar Values. (Correct Answer)
+C. Collections enable you to store rows and columns in the current session into database tables (Your
+Answer)
+D. You insert, update, and delete collection information using PL/SQL API APEX_COLLECTION.
+(Correct Answer)
+Explanation
+Correct
+
+Question 5 · Managing Application Data
+Answered Incorrectly
+
+<p>Oracle APEX provides direct integration of REST Data Sources in which of the following
+components?</p>
+A. Classic Reports
+B. Interactive Reports (Your Answer)
+
+C. Interactive Grids
+D. JET Charts
+E. All of them (Correct Answer)
+Explanation
+<p>Correct</p>
+
+Extending Application Capabilities
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+2
+
+2
+
+50%
+
+Question 1 · Extending Application Capabilities
+Answered Incorrectly
+
+What three are the building blocks of Approvals Component?
+A. Task Details Page (Correct Answer)
+B. Automations
+C. Task Definition (Correct – Your Answer)
+D. Unified Task List (Correct Answer)
+Explanation
+Correct
+
+Question 2 · Extending Application Capabilities
+Answered Incorrectly
+
+Which three of the following are use cases of Automations?
+A. Sending email alerts at a particular time of the week (Correct Answer)
+B. Approving specific requests (Correct Answer)
+C. Monitoring log tables and raising an alert when there is an issue (Your Answer)
+D. Deleting a database record based on an end user's request (Correct Answer)
+Explanation
+Correct
+
+Question 3 · Extending Application Capabilities
+
+Answered Correctly
+
+<p>What are Task definitions that exist on the application level in the Shared Components
+section made up of?</p>
+A. Task Settings
+B. Particpants
+C. Parameters
+D. Actions
+E. All of them (Correct – Your Answer)
+Explanation
+<p>Correct</p>
+
+Question 4 · Extending Application Capabilities
+Answered Correctly
+
+<p>Plug-ins can be used declaratively in which of the following components in APEX?</p>
+A. Items
+B. Regions
+C. Dynamic Actions
+D. Process Type
+E. All of them (Correct – Your Answer)
+Explanation
+<p>Correct</p>
+
+Using Themes, Theme Styles and Templates
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+0
+
+4
+
+0%
+
+Question 1 · Using Themes, Theme Styles and Templates
+Answered Incorrectly
+
+<p>Developers can use Template Options in which of the following ways?</p>
+A. Applying different colors or accents
+B. Applying different spacing and padding
+C. Rendering buttons in different styles, with and without icons (Your Answer)
+D. Displaying form fields with different alignments
+E. All of them (Correct Answer)
+Explanation
+<p>Correct</p>
+
+Question 2 · Using Themes, Theme Styles and Templates
+Answered Incorrectly
+
+Which of the following options in the Developer Toolbar enables you to customize the look and
+feel of the application?
+A. Customize (Correct Answer)
+B. Debug
+C. Session
+D. Quick Edit (Your Answer)
+Explanation
+Correct
+
+Question 3 · Using Themes, Theme Styles and Templates
+Answered Incorrectly
+
+<p>Choose the statement that is TRUE about Universal Theme.</p>
+A. Universal theme is the default theme that is shipped with Oracle APEX
+B. Features a responsive design and enables developers to create web applications without extensive
+knowledge of HTML, CSS, or JavaScript (Your Answer)
+C. Uses a 12-column grid layout system for arranging components on a page.
+D. Ships with a variety of pre-built theme styles.
+E. All of them (Correct Answer)
+Explanation
+<p>Correct</p>
+
+Question 4 · Using Themes, Theme Styles and Templates
+Answered Incorrectly
+
+What are the three key features of Universal Theme?
+A. Easy Customization (Correct Answer)
+B. Support for single theme
+C. Responsive Design (Correct Answer)
+D. Versatile UI Components (Correct – Your Answer)
+Explanation
+Correct
+
+Implementing Navigation in your Application
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+1
+
+3
+
+25%
+
+Question 1 · Implementing Navigation in your Application
+Answered Correctly
+
+Generally, clicking on the hamburger menu in the upper-left corner of an APEX application
+displays a list of pages. What is this navigation called?
+A. Lists
+B. Breadcrumbs
+C. Navigation Bar List
+D. Navigation Menu (Correct – Your Answer)
+Explanation
+Correct
+
+Question 2 · Implementing Navigation in your Application
+Answered Incorrectly
+
+Which three statements are TRUE about Search Configuration?
+A. Search Configuration is a shared component defines the data source to be searched and the way
+results should be displayed. (Correct – Your Answer)
+B. One or more Search Configurations can be configured in a Search Page. (Correct Answer)
+C. Only one Search Configuration can be used in a Search Page.
+D. Searches can be based on Local data, APEX Lists, REST Enabled SQL Service, or REST Data Sources.
+(Correct Answer)
+Explanation
+Correct
+
+Question 3 · Implementing Navigation in your Application
+Answered Incorrectly
+
+Which three statements are TRUE about Shared Components?
+A. Breadcrumbs, Lists, and Navigation Bar entries are examples of shared components (Correct
+Answer)
+B. Shared components are common elements that can be displayed or applied on any page within an
+application (Correct Answer)
+C. Once you create a Shared Component, you can add them to any page within an APEX application in
+any workspace. (Your Answer)
+D. Once you create a Shared Component, you can add them to any page within your APEX application
+(Correct Answer)
+Explanation
+Correct
+
+Question 4 · Implementing Navigation in your Application
+Answered Incorrectly
+
+Select the two places from where you can access the Shared Components Page?
+A. SQL Workshop
+B. Gallery
+C. Application homepage (Correct – Your Answer)
+D. Page Designer (Correct Answer)
+Explanation
+Correct
+
+Creating and Using Forms
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+1
+
+3
+
+25%
+
+Question 1 · Creating and Using Forms
+Answered Incorrectly
+
+Choose the three Form types that you can create using the Create Page wizard.
+A. Master Detail (Correct Answer)
+B. Interactive Report (Your Answer)
+C. Form (Correct Answer)
+D. Interactive Grid (Correct Answer)
+Explanation
+Correct
+
+Question 2 · Creating and Using Forms
+Answered Correctly
+
+Consider a page in an APEX app where the Departments names with location is displayed on the
+left. Selecting a Department on the left will render details of the employees corresponding to that
+department on the right. Which kind of report/form is this?
+A. Stacked Master Detail
+B. Side by Side Master Detail (Correct – Your Answer)
+C. Interactive Report
+D. Cards
+Explanation
+Correct
+
+Question 3 · Creating and Using Forms
+Answered Incorrectly
+
+Select the three ways in which you can create a Form in APEX.
+A. Using Shared Components
+B. Create a Form region in Page Designer (Correct – Your Answer)
+C. Using the Create Application Wizard (Correct Answer)
+D. Using the Create Page wizard (Correct Answer)
+Explanation
+Correct
+
+Question 4 · Creating and Using Forms
+Answered Incorrectly
+
+What are the three types of Master Detail Form you can create in APEX?
+A. Two Page Drill Down (Correct Answer)
+B. Stacked (Correct Answer)
+C. One Below the other (Your Answer)
+D. Side by Side (Correct Answer)
+Explanation
+Correct
+
+Managing Cards, Faceted Search, and Smart Filters
+4 Questions
+Total Questions
+
+Correct
+
+Incorrect
+
+Score
+
+4
+
+0
+
+4
+
+0%
+
+Question 1 · Managing Cards, Faceted Search, and Smart Filters
+Answered Incorrectly
+
+Which three of the following statements are TRUE about Faceted Search?
+A. You can create only 5 facets per page
+B. After the end user changes a facet, the results, dependent facets, and occurrence counts refresh
+immediately. (Correct Answer)
+C. The facets are displayed on the left and upper part of the screen (Correct Answer)
+D. The right side of the page features a Search Results region, which can display as a classic report or a
+cards report. (Correct – Your Answer)
+Explanation
+Correct
+
+Question 2 · Managing Cards, Faceted Search, and Smart Filters
+Answered Incorrectly
+
+Select two features of a Smart Filters Page.
+A. Consists of filters at the left side and report on the right side of the page
+B. Consists of a single search field with filters at the top of the page and a report at the bottom
+(Correct Answer)
+C. Each filter represents the text entered by the end user in the search field
+D. Each filter displays as a suggestion chip with a single count of how often the specific suggestion
+value occurs. (Correct – Your Answer)
+Explanation
+Correct
+
+Question 3 · Managing Cards, Faceted Search, and Smart Filters
+Answered Incorrectly
+
+Select the three types of Facets you can create in APEX.
+A. Text Area
+B. Input Field (Correct Answer)
+C. Range (Correct Answer)
+D. Checkbox Group (Correct – Your Answer)
+Explanation
+Correct
+
+Question 4 · Managing Cards, Faceted Search, and Smart Filters
+Answered Incorrectly
+
+Select the three types of Card Layout you can create in APEX.
+A. Vertical(Column)
+B. Grid (Correct Answer)
+C. Float (Correct Answer)
+D. Horizontal(Row) (Correct – Your Answer)
+Explanation
+Correct
+
+
