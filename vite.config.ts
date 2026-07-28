@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     tanstackStart({
-      server: { entry: "server", preset: "vercel" },
+      server: { entry: "server" },
       serverFns: {
         disableCsrfMiddlewareWarning: true,
       },
