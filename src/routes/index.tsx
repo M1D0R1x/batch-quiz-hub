@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { user, loading } = useAuth();
+  const { userId: user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -1,26 +1,26 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getSessionUser } from "@/lib/auth.functions";
 
 type AuthState = {
-  user: User | null;
-  session: Session | null;
+  userId: string | null;
   loading: boolean;
 };
 
-const AuthContext = createContext<AuthState>({ user: null, session: null, loading: true });
+const AuthContext = createContext<AuthState>({ userId: null, loading: true });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ user: null, session: null, loading: true });
+  const [state, setState] = useState<AuthState>({ userId: null, loading: true });
+  const getSessionUserFn = useServerFn(getSessionUser);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ user: session?.user ?? null, session, loading: false });
+    let cancelled = false;
+    getSessionUserFn().then((session) => {
+      if (!cancelled) setState({ userId: session?.userId ?? null, loading: false });
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setState({ user: data.session?.user ?? null, session: data.session, loading: false });
-    });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;

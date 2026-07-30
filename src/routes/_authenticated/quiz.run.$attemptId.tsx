@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getActiveAttempt, submitAttempt } from "@/lib/quiz.functions";
+import { getActiveAttempt, submitAttempt, saveQuizProgress } from "@/lib/quiz.functions";
 
 export const Route = createFileRoute("/_authenticated/quiz/run/$attemptId")({
   head: () => ({
@@ -41,6 +41,7 @@ function QuizRun() {
   const nav = useNavigate();
   const loadFn = useServerFn(getActiveAttempt);
   const submitFn = useServerFn(submitAttempt);
+  const saveFn = useServerFn(saveQuizProgress);
 
   const q = useQuery({
     queryKey: ["attempt-run", attemptId],
@@ -77,8 +78,20 @@ function QuizRun() {
       const iv = setInterval(tick, 1000);
       return () => clearInterval(iv);
     }
-    const prior = (q.data.attempt as any).answers?.picked;
-    if (prior) setAnswers(prior);
+    // Restore draft state from server (saved by pause or auto-save)
+    const savedAnswers = (q.data.attempt as any).answers;
+    if (savedAnswers?.draft_answers) {
+      setAnswers(savedAnswers.draft_answers);
+      if (savedAnswers.draft_flagged) {
+        setFlagged(new Set(savedAnswers.draft_flagged));
+      }
+      if (typeof savedAnswers.draft_index === 'number') {
+        setIdx(savedAnswers.draft_index);
+      }
+    } else if (savedAnswers?.picked) {
+      // Legacy fallback
+      setAnswers(savedAnswers.picked);
+    }
   }, [q.data]);
 
   // Track visited questions whenever idx changes
@@ -89,6 +102,29 @@ function QuizRun() {
       setVisited((prev) => new Set(prev).add(current.id));
     }
   }, [idx, q.data?.questions]);
+
+  // Auto-save progress every 30 seconds
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (!q.data || q.data.attempt.completed_at) return;
+    // Clear any existing interval
+    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+    
+    autoSaveRef.current = setInterval(() => {
+      saveFn({
+        data: {
+          attemptId,
+          answers,
+          flagged: Array.from(flagged),
+          currentIndex: idx,
+        },
+      }).catch(() => {}); // Silent auto-save, don't toast on failure
+    }, 30_000);
+    
+    return () => {
+      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+    };
+  }, [q.data, answers, flagged, idx]);
 
   const submit = useMutation({
     mutationFn: () =>
@@ -214,10 +250,21 @@ function QuizRun() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                localStorage.setItem(`quiz_draft_${attemptId}`, JSON.stringify({ answers, idx }));
-                toast.success("Quiz paused! Resume it anytime from your dashboard.");
-                nav({ to: "/dashboard" });
+              onClick={async () => {
+                try {
+                  await saveFn({
+                    data: {
+                      attemptId,
+                      answers,
+                      flagged: Array.from(flagged),
+                      currentIndex: idx,
+                    },
+                  });
+                  toast.success('Quiz paused! Resume anytime from your dashboard.');
+                } catch {
+                  toast.error('Failed to save progress');
+                }
+                nav({ to: '/dashboard' });
               }}
               className="gap-1.5 text-xs h-9"
             >

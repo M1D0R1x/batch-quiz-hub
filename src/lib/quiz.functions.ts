@@ -212,6 +212,85 @@ export const getActiveAttempt = createServerFn({ method: "GET" })
     return { attempt, questions: ordered };
   });
 
+export const saveQuizProgress = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        attemptId: z.string().uuid(),
+        answers: z.record(z.string(), z.array(z.number().int())),
+        flagged: z.array(z.string().uuid()).default([]),
+        currentIndex: z.number().int().min(0).default(0),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    // Verify the attempt belongs to this user and isn't completed
+    const { data: attempt, error } = await context.supabase
+      .from('quiz_attempts')
+      .select('id, completed_at')
+      .eq('id', data.attemptId)
+      .eq('user_id', context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!attempt) throw new Error('Attempt not found');
+    if (attempt.completed_at) throw new Error('Attempt already completed');
+
+    // Save draft state into the answers JSONB column
+    const { error: e2 } = await context.supabase
+      .from('quiz_attempts')
+      .update({
+        answers: {
+          draft_answers: data.answers,
+          draft_flagged: data.flagged,
+          draft_index: data.currentIndex,
+          draft_saved_at: new Date().toISOString(),
+        },
+      })
+      .eq('id', data.attemptId);
+    if (e2) throw new Error(e2.message);
+
+    return { ok: true };
+  });
+
+export const getInProgressAttempts = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: attempts, error } = await context.supabase
+      .from('quiz_attempts')
+      .select('id, course_id, subtopic_ids, question_count, started_at, time_limit_seconds, is_simulate, answers')
+      .eq('user_id', context.userId)
+      .is('completed_at', null)
+      .order('started_at', { ascending: false })
+      .limit(10);
+    if (error) throw new Error(error.message);
+
+    // Fetch course names for display
+    const courseIds = [...new Set((attempts ?? []).map((a) => a.course_id).filter(Boolean))];
+    let courseMap = new Map<string, string>();
+    if (courseIds.length > 0) {
+      const { data: courses } = await context.supabase
+        .from('courses')
+        .select('id, name')
+        .in('id', courseIds);
+      courseMap = new Map((courses ?? []).map((c) => [c.id, c.name]));
+    }
+
+    return (attempts ?? []).map((a) => ({
+      id: a.id,
+      courseId: a.course_id,
+      courseName: courseMap.get(a.course_id) ?? 'Quiz',
+      questionCount: a.question_count,
+      startedAt: a.started_at,
+      timeLimitSeconds: a.time_limit_seconds,
+      isSimulate: a.is_simulate,
+      answeredCount: Object.keys((a.answers as any)?.draft_answers ?? {}).filter(
+        (k) => ((a.answers as any)?.draft_answers?.[k] ?? []).length > 0
+      ).length,
+      draftSavedAt: (a.answers as any)?.draft_saved_at ?? null,
+    }));
+  });
+
 function scoreQuestion(type: "mcq" | "msq", correct: number[], picked: number[]): number {
   if (type === "mcq") {
     if (picked.length !== 1) return 0;

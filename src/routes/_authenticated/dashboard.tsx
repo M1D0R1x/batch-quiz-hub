@@ -3,11 +3,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles } from "lucide-react";
+import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles, Pause } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt } from "@/lib/quiz.functions";
+import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -30,12 +30,14 @@ function Dashboard() {
 
   const weakFn = useServerFn(getWeakAreaStats);
   const startWeakFn = useServerFn(startWeakAreaAttempt);
+  const inProgressFn = useServerFn(getInProgressAttempts);
 
   const me = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const stats = useQuery({ queryKey: ["dashboard-stats"], queryFn: () => statsFn() });
   const courses = useQuery({ queryKey: ["courses"], queryFn: () => listFn() });
   const weakStats = useQuery({ queryKey: ["weak-area-stats"], queryFn: () => weakFn() });
   const { data: roleInfo } = useQuery({ queryKey: ["myRole"], queryFn: () => roleFn() });
+  const inProgress = useQuery({ queryKey: ['in-progress-attempts'], queryFn: () => inProgressFn() });
 
   const startWeakMutation = useMutation({
     mutationFn: () => startWeakFn(),
@@ -126,23 +128,41 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Active / Paused Attempt Banner */}
-        {stats.data?.recent?.[0] && !stats.data.recent[0].completed_at && (
-          <div className="card-elevated p-5 bg-gradient-to-r from-primary/15 via-primary/5 to-card border-primary/40 flex items-center justify-between gap-4 animate-fade-up">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-primary text-primary-foreground">
-                <Play className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-foreground">You have a quiz in progress!</h3>
-                <p className="text-xs text-muted-foreground">Resume your paused session where you left off.</p>
-              </div>
+        {/* In-Progress / Paused Quizzes */}
+        {inProgress.data && inProgress.data.length > 0 && (
+          <div className="space-y-3 animate-fade-up">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Pause className="h-4 w-4 text-primary" />
+              Resume where you left off
+            </h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {inProgress.data.map((attempt: any) => (
+                <div
+                  key={attempt.id}
+                  className="card-elevated p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-card border-primary/30 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shrink-0">
+                      <Play className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm truncate">{attempt.courseName}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {attempt.answeredCount}/{attempt.questionCount} answered
+                        {attempt.draftSavedAt && (
+                          <> · saved {new Date(attempt.draftSavedAt).toLocaleString()}</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild size="sm" className="gap-1.5 shrink-0">
+                    <Link to="/quiz/run/$attemptId" params={{ attemptId: attempt.id }}>
+                      Resume <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+              ))}
             </div>
-            <Button asChild className="gap-2">
-              <Link to="/quiz/run/$attemptId" params={{ attemptId: stats.data.recent[0].id }}>
-                Resume Quiz <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
           </div>
         )}
 

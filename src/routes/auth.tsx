@@ -8,21 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-
-// Supabase Auth requires an email under the hood. Rather than send real
-// confirmation emails (which hits Supabase's strict built-in rate limit),
-// we derive a deterministic, fake-but-valid email from the username. No
-// email is ever sent to it, so the rate limiter never triggers no matter
-// how many people sign up. "Confirm email" must be OFF in the Supabase
-// dashboard for this to work (Authentication -> Sign In / Providers).
-const AUTH_EMAIL_DOMAIN = "quizforge.internal";
-
-const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,30}$/;
-
-function usernameToAuthEmail(username: string) {
-  return `${username.trim().toLowerCase()}@${AUTH_EMAIL_DOMAIN}`;
-}
+import { signUp, signIn } from '@/lib/auth.functions';
+import { useServerFn } from '@tanstack/react-start';
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -38,8 +25,10 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { user, loading } = useAuth();
+  const { userId, loading } = useAuth();
   const navigate = useNavigate();
+  const signUpFn = useServerFn(signUp);
+  const signInFn = useServerFn(signIn);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [username, setUsername] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -47,55 +36,18 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
-  }, [loading, user, navigate]);
+    if (!loading && userId) navigate({ to: "/dashboard" });
+  }, [loading, userId, navigate]);
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
-
-    const cleanUsername = username.trim();
-    if (!USERNAME_RE.test(cleanUsername)) {
-      toast.error("Username must be 3-30 characters: letters, numbers, '.', '_' or '-' only.");
-      return;
-    }
-
     setBusy(true);
     try {
-      const authEmail = usernameToAuthEmail(cleanUsername);
-      const res = await supabase.auth.signUp({
-        email: authEmail,
-        password,
-        options: {
-          data: {
-            username: cleanUsername,
-            contact_email: contactEmail.trim() || null,
-          },
-        },
-      });
-
-      if (res.error) {
-        if (res.error.message?.toLowerCase().includes("already registered")) {
-          throw new Error("That username is taken. Try a different one, or sign in instead.");
-        }
-        throw res.error;
-      }
-
-      if (res.data.session) {
-        toast.success("Account created!");
-        navigate({ to: "/onboarding" });
-      } else {
-        // Shouldn't normally happen once "Confirm email" is off, but handle it just in case.
-        const signRes = await supabase.auth.signInWithPassword({ email: authEmail, password });
-        if (!signRes.error && signRes.data.session) {
-          toast.success("Account created!");
-          navigate({ to: "/onboarding" });
-        } else {
-          toast.success("Account created! You can now sign in.");
-          setMode("signin");
-        }
-      }
+      await signUpFn({ data: { username: username.trim(), password, contactEmail: contactEmail.trim() } });
+      toast.success('Account created!');
+      navigate({ to: '/onboarding' });
     } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+      toast.error(err.message ?? 'Something went wrong');
     } finally {
       setBusy(false);
     }
@@ -103,24 +55,13 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    const cleanUsername = username.trim();
-    if (!cleanUsername) {
-      toast.error("Enter your username.");
-      return;
-    }
-
     setBusy(true);
     try {
-      const authEmail = usernameToAuthEmail(cleanUsername);
-      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
-      if (error) {
-        if (error.message?.toLowerCase().includes("invalid login credentials")) {
-          throw new Error("Incorrect username or password.");
-        }
-        throw error;
-      }
+      await signInFn({ data: { username: username.trim(), password } });
+      toast.success('Signed in!');
+      navigate({ to: '/dashboard' });
     } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+      toast.error(err.message ?? 'Something went wrong');
     } finally {
       setBusy(false);
     }

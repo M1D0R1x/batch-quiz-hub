@@ -6,16 +6,16 @@ import { AvatarBadge } from "@/components/avatar-badge";
 import { ProfileModal } from "@/components/profile-modal";
 import { PWAInstallModal } from "@/components/pwa-install-modal";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyProfile } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
+import { signOutFn } from "@/lib/auth.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function AppHeader() {
-  const { user } = useAuth();
+  const { userId: user } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -23,6 +23,7 @@ export function AppHeader() {
 
   const meFn = useServerFn(getMyProfile);
   const roleFn = useServerFn(getMyRole);
+  const signOutAction = useServerFn(signOutFn);
 
   const { data: profile } = useQuery({
     queryKey: ["me"],
@@ -111,7 +112,7 @@ export function AppHeader() {
                   size="icon"
                   aria-label="Sign out"
                   onClick={async () => {
-                    await supabase.auth.signOut();
+                    await signOutAction();
                     router.navigate({ to: "/auth" });
                   }}
                   className="h-8 w-8"
