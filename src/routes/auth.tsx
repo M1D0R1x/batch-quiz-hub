@@ -10,6 +10,19 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
+// Supabase Auth requires an email under the hood. Rather than send real
+// confirmation emails (which hits Supabase's strict built-in rate limit),
+// we derive a deterministic, fake-but-valid email from the username. No
+// email is ever sent to it, so the rate limiter never triggers no matter
+// how many people sign up. "Confirm email" must be OFF in the Supabase
+// dashboard for this to work (Authentication -> Sign In / Providers).
+const AUTH_EMAIL_DOMAIN = "quizforge.internal";
+
+const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,30}$/;
+
+function usernameToAuthEmail(username: string) {
+  return `${username.trim().toLowerCase()}@${AUTH_EMAIL_DOMAIN}`;
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -28,60 +41,58 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
   }, [loading, user, navigate]);
 
-  async function handleEmail(e: React.FormEvent) {
+  async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+
+    const cleanUsername = username.trim();
+    if (!USERNAME_RE.test(cleanUsername)) {
+      toast.error("Username must be 3-30 characters: letters, numbers, '.', '_' or '-' only.");
+      return;
+    }
+
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const res = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { full_name: name || email.split("@")[0] },
+      const authEmail = usernameToAuthEmail(cleanUsername);
+      const res = await supabase.auth.signUp({
+        email: authEmail,
+        password,
+        options: {
+          data: {
+            username: cleanUsername,
+            contact_email: contactEmail.trim() || null,
           },
-        });
+        },
+      });
 
-        if (res.error) {
-          // If rate-limited on sign up (HTTP 429), fallback to direct sign in attempt
-          if ((res.error as any).status === 429 || res.error.message?.toLowerCase().includes("rate limit") || res.error.message?.includes("429")) {
-            const fallbackSign = await supabase.auth.signInWithPassword({ email, password });
-            if (fallbackSign.data?.session) {
-              toast.success("Welcome back!");
-              navigate({ to: "/dashboard" });
-              return;
-            }
-            throw new Error("Sign-up rate limit reached. If you already created an account, please switch to 'Sign in'.");
-          }
-          throw res.error;
+      if (res.error) {
+        if (res.error.message?.toLowerCase().includes("already registered")) {
+          throw new Error("That username is taken. Try a different one, or sign in instead.");
         }
-        
-        if (res.data.session) {
-          toast.success("Account created successfully!");
+        throw res.error;
+      }
+
+      if (res.data.session) {
+        toast.success("Account created!");
+        navigate({ to: "/onboarding" });
+      } else {
+        // Shouldn't normally happen once "Confirm email" is off, but handle it just in case.
+        const signRes = await supabase.auth.signInWithPassword({ email: authEmail, password });
+        if (!signRes.error && signRes.data.session) {
+          toast.success("Account created!");
           navigate({ to: "/onboarding" });
         } else {
-          // Attempt instant sign-in if email confirmation is disabled in Supabase
-          const signRes = await supabase.auth.signInWithPassword({ email, password });
-          if (!signRes.error && signRes.data.session) {
-            toast.success("Account created!");
-            navigate({ to: "/onboarding" });
-          } else {
-            toast.success("Account created! You can now sign in.");
-            setMode("signin");
-          }
+          toast.success("Account created! You can now sign in.");
+          setMode("signin");
         }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
       }
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
@@ -90,23 +101,26 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
+  async function handleSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanUsername = username.trim();
+    if (!cleanUsername) {
+      toast.error("Enter your username.");
+      return;
+    }
+
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
+      const authEmail = usernameToAuthEmail(cleanUsername);
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
       if (error) {
-        if (error.message?.includes("provider is not enabled")) {
-          throw new Error("Google Sign-In is not enabled in Supabase project settings. Please sign in with Email & Password.");
+        if (error.message?.toLowerCase().includes("invalid login credentials")) {
+          throw new Error("Incorrect username or password.");
         }
         throw error;
       }
     } catch (err: any) {
-      toast.error(err?.message ?? "Google sign-in failed");
+      toast.error(err.message ?? "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -135,14 +149,27 @@ function AuthPage() {
             </TabsList>
 
             <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleEmail} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    autoComplete="username"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Signing in…" : "Sign in"}
@@ -151,18 +178,34 @@ function AuthPage() {
             </TabsContent>
 
             <TabsContent value="signup" className="mt-6">
-              <form onSubmit={handleEmail} className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Kumar" />
+                  <Label htmlFor="username2">Username</Label>
+                  <Input
+                    id="username2"
+                    autoComplete="username"
+                    placeholder="alex_kumar"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    3-30 characters. Letters, numbers, '.', '_' or '-' only. This is what you'll use to sign in.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email2">Email</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label htmlFor="email2">Email (optional)</Label>
+                  <Input
+                    id="email2"
+                    type="email"
+                    placeholder="for account recovery only"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw2">Password</Label>
-                  <Input id="pw2" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input id="pw2" type="password" autoComplete="new-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Creating account…" : "Create account"}
