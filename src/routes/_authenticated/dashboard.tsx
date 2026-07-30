@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
-import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
+import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboardStats, listCourses, getMyProfile } from "@/lib/quiz.functions";
+import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -27,10 +28,25 @@ function Dashboard() {
   const meFn = useServerFn(getMyProfile);
   const roleFn = useServerFn(getMyRole);
 
+  const weakFn = useServerFn(getWeakAreaStats);
+  const startWeakFn = useServerFn(startWeakAreaAttempt);
+
   const me = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const stats = useQuery({ queryKey: ["dashboard-stats"], queryFn: () => statsFn() });
   const courses = useQuery({ queryKey: ["courses"], queryFn: () => listFn() });
+  const weakStats = useQuery({ queryKey: ["weak-area-stats"], queryFn: () => weakFn() });
   const { data: roleInfo } = useQuery({ queryKey: ["myRole"], queryFn: () => roleFn() });
+
+  const startWeakMutation = useMutation({
+    mutationFn: () => startWeakFn(),
+    onSuccess: (res) => {
+      toast.success(`Launched Weak-Area Practice with ${res.count} targeted questions!`);
+      nav({ to: "/quiz/run/$attemptId", params: { attemptId: res.attemptId } });
+    },
+    onError: (e: any) => {
+      toast.error(e.message ?? "Failed to start weak-area drill");
+    },
+  });
 
   useEffect(() => {
     if (me.data && !me.data.onboarded_at) nav({ to: "/onboarding" });
@@ -67,6 +83,48 @@ function Dashboard() {
             )}
           </div>
         </section>
+
+        {/* Retest Weak-Areas Flashy Compact Banner */}
+        {weakStats.data && weakStats.data.wrongCount > 0 && (
+          <div className="relative overflow-hidden rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 p-5 shadow-md shadow-amber-500/5 animate-fade-up">
+            {/* Glowing background aura */}
+            <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/15 blur-2xl pointer-events-none" />
+
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="relative shrink-0">
+                  <div className="absolute inset-0 rounded-xl bg-amber-500/30 animate-ping" />
+                  <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-amber-950 shadow-md shadow-amber-500/20 font-bold">
+                    <Target className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-foreground text-base">
+                      Retest Mis-answered Questions 🔥
+                    </h3>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                      {Math.min(weakStats.data.wrongCount, 15)} of {weakStats.data.wrongCount} questions
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Launch a targeted drill containing questions you answered wrong in past quizzes.
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => startWeakMutation.mutate()}
+                disabled={startWeakMutation.isPending}
+                className="gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold shadow-md shadow-amber-500/20 transition-transform active:scale-95 shrink-0 h-10 px-4 text-xs"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                {startWeakMutation.isPending ? "Generating Drill..." : "Practice Weak Areas 🚀"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Active / Paused Attempt Banner */}
         {stats.data?.recent?.[0] && !stats.data.recent[0].completed_at && (

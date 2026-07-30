@@ -19,9 +19,25 @@ export const listCourses = createServerFn({ method: "GET" })
       .order("order_index");
     if (e2) throw new Error(e2.message);
 
+    // Fetch question counts per subtopic
+    const subIds = (subs ?? []).map((s) => s.id);
+    let qCounts: Record<string, number> = {};
+    if (subIds.length > 0) {
+      const { data: qs } = await context.supabase
+        .from("questions")
+        .select("id, subtopic_id")
+        .in("subtopic_id", subIds);
+      for (const q of qs ?? []) {
+        qCounts[q.subtopic_id] = (qCounts[q.subtopic_id] ?? 0) + 1;
+      }
+    }
+
     return (courses ?? []).map((c) => ({
       ...c,
-      subtopics: (subs ?? []).filter((s) => s.course_id === c.id),
+      subtopics: (subs ?? []).filter((s) => s.course_id === c.id).map((s) => ({
+        ...s,
+        question_count: qCounts[s.id] ?? 0,
+      })),
     }));
   });
 
@@ -75,13 +91,21 @@ export const getMyProfile = createServerFn({ method: "GET" })
 export const completeOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
-    z.object({ courseTrackId: z.string().uuid(), displayName: z.string().min(1).max(80).optional() }).parse(d),
+    z.object({ displayName: z.string().min(1).max(80).optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    // Auto-assign the first available course (course track is optional)
+    const { data: firstCourse } = await context.supabase
+      .from("courses")
+      .select("id")
+      .order("name")
+      .limit(1)
+      .maybeSingle();
+
     const { error } = await context.supabase
       .from("profiles")
       .update({
-        course_track_id: data.courseTrackId,
+        course_track_id: firstCourse?.id ?? null,
         display_name: data.displayName ?? undefined,
         onboarded_at: new Date().toISOString(),
       })
@@ -468,4 +492,126 @@ export const getDashboardStats = createServerFn({ method: "GET" })
         completed_at: a.completed_at,
       })),
     };
+  });
+
+export const getWeakAreaStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: attempts, error } = await context.supabase
+      .from("quiz_attempts")
+      .select("question_ids, answers")
+      .eq("user_id", context.userId)
+      .not("completed_at", "is", null);
+
+    if (error || !attempts) return { wrongCount: 0 };
+
+    const wrongSet = new Set<string>();
+    const allQIds = Array.from(new Set(attempts.flatMap((a) => a.question_ids || [])));
+    if (allQIds.length === 0) return { wrongCount: 0 };
+
+    const { data: qs } = await context.supabase
+      .from("questions")
+      .select("id, type, correct_answers")
+      .in("id", allQIds);
+
+    const qMap = new Map((qs ?? []).map((q) => [q.id, q]));
+
+    for (const att of attempts) {
+      const pickedMap = (att.answers as any)?.picked || {};
+      for (const qid of att.question_ids || []) {
+        const q = qMap.get(qid);
+        if (!q) continue;
+        const picked = pickedMap[qid] ?? [];
+        if (picked.length > 0) {
+          const raw = scoreQuestion(q.type as any, q.correct_answers as number[], picked);
+          if (raw < 1) wrongSet.add(qid);
+        }
+      }
+    }
+
+    return { wrongCount: wrongSet.size };
+  });
+
+export const startWeakAreaAttempt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: attempts, error } = await context.supabase
+      .from("quiz_attempts")
+      .select("id, question_ids, answers, course_id")
+      .eq("user_id", context.userId)
+      .not("completed_at", "is", null);
+
+    if (error) throw new Error(error.message);
+    if (!attempts || attempts.length === 0) {
+      throw new Error("You haven't completed any quizzes yet to collect weak-area questions.");
+    }
+
+    const wrongQuestionIds = new Set<string>();
+    let fallbackCourseId: string | null = null;
+
+    const allQIds = Array.from(new Set(attempts.flatMap((a) => a.question_ids || [])));
+    if (allQIds.length === 0) throw new Error("No question history found.");
+
+    const { data: qs } = await context.supabase
+      .from("questions")
+      .select("id, type, correct_answers, subtopic_id")
+      .in("id", allQIds);
+
+    const qMap = new Map((qs ?? []).map((q) => [q.id, q]));
+
+    for (const att of attempts) {
+      if (!fallbackCourseId && att.course_id) fallbackCourseId = att.course_id;
+      const pickedMap = (att.answers as any)?.picked || {};
+      for (const qid of att.question_ids || []) {
+        const q = qMap.get(qid);
+        if (!q) continue;
+        const picked = pickedMap[qid] ?? [];
+        if (picked.length > 0) {
+          const raw = scoreQuestion(q.type as any, q.correct_answers as number[], picked);
+          if (raw < 1) wrongQuestionIds.add(qid);
+        }
+      }
+    }
+
+    if (wrongQuestionIds.size === 0) {
+      throw new Error("Awesome! You don't have any incorrect questions in your history to retry!");
+    }
+
+    const wrongArray = Array.from(wrongQuestionIds);
+    const { data: pool, error: poolErr } = await context.supabase
+      .from("questions")
+      .select("id, subtopic_id, type, question_text, options, difficulty")
+      .in("id", wrongArray);
+
+    if (poolErr) throw new Error(poolErr.message);
+    if (!pool || pool.length === 0) throw new Error("No questions found.");
+
+    const selected = [...pool].sort(() => Math.random() - 0.5).slice(0, 15);
+    const subtopicIds = Array.from(new Set(selected.map((q) => q.subtopic_id)));
+
+    // Ensure fallbackCourseId is valid or pick first available course
+    if (!fallbackCourseId) {
+      const { data: firstC } = await context.supabase.from("courses").select("id").limit(1).maybeSingle();
+      fallbackCourseId = firstC?.id ?? null;
+    }
+
+    const { data: attempt, error: e2 } = await context.supabase
+      .from("quiz_attempts")
+      .insert({
+        user_id: context.userId,
+        course_id: fallbackCourseId,
+        subtopic_ids: subtopicIds,
+        question_ids: selected.map((q) => q.id),
+        question_count: selected.length,
+        time_limit_seconds: null,
+        is_simulate: false,
+        negative_marking: 0,
+        answers: {},
+      })
+      .select("id")
+      .single();
+
+    if (e2) throw new Error(e2.message);
+
+    return { attemptId: attempt.id, count: selected.length };
   });

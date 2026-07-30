@@ -165,28 +165,52 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
               </div>
             )}
 
-            {step === 2 && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {[10, 20, 30, 50].map((n) => (
-                    <Button key={n} variant={count === n ? "default" : "outline"} onClick={() => setCount(n)}>
-                      {n}
-                    </Button>
-                  ))}
+            {step === 2 && (() => {
+              const availableCount = course
+                ? course.subtopics
+                    .filter((s: any) => subtopicIds.includes(s.id))
+                    .reduce((sum: number, s: any) => sum + (s.question_count ?? 0), 0)
+                : 0;
+              const presets = [10, 20, 30, 50].filter((n) => availableCount === 0 || n <= availableCount);
+              return (
+                <div className="space-y-4">
+                  {availableCount > 0 && (
+                    <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-4 py-2.5 text-sm">
+                      <span className="text-muted-foreground">Available questions in selected chapters:</span>
+                      <span className="font-bold text-primary">{availableCount}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {(presets.length > 0 ? presets : [10, 20, 30, 50]).map((n) => (
+                      <Button
+                        key={n}
+                        variant={count === n ? "default" : "outline"}
+                        onClick={() => setCount(n)}
+                        disabled={availableCount > 0 && n > availableCount}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Custom:</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={availableCount > 0 ? availableCount : 200}
+                      value={count}
+                      onChange={(e) => setCount(Math.max(1, Math.min(availableCount > 0 ? availableCount : 200, Number(e.target.value) || 1)))}
+                      className="max-w-[120px]"
+                    />
+                  </div>
+                  {availableCount > 0 && count > availableCount && (
+                    <p className="text-xs text-destructive">
+                      Only {availableCount} questions available. Count will be capped automatically.
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Custom:</span>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={200}
-                    value={count}
-                    onChange={(e) => setCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
-                    className="max-w-[120px]"
-                  />
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {step === 3 && (
               <div className="space-y-3">
@@ -203,8 +227,8 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
                   )}
                 </div>
                 {simulate && (
-                  <p className="flex items-center gap-2 rounded-md bg-warning/10 p-3 text-xs text-warning-foreground">
-                    <Timer className="h-4 w-4" /> Simulate mode requires a timer — you can't remove it.
+                  <p className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-300 font-medium">
+                    <Timer className="h-4 w-4 shrink-0" /> Simulate mode requires a timer — you can't remove it.
                   </p>
                 )}
                 <div className="flex items-center gap-2">

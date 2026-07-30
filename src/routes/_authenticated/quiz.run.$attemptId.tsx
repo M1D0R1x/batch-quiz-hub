@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Flag, Menu, Pause } from "lucide-react";
+import { AlertTriangle, Flag, Menu, Pause, CheckSquare, Circle } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,6 +52,7 @@ function QuizRun() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number[]>>({});
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
+  const [visited, setVisited] = useState<Set<string>>(new Set());
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const submittedRef = useRef(false);
 
@@ -76,10 +77,18 @@ function QuizRun() {
       const iv = setInterval(tick, 1000);
       return () => clearInterval(iv);
     }
-    // restore prior partial (should be empty when starting a fresh attempt)
     const prior = (q.data.attempt as any).answers?.picked;
     if (prior) setAnswers(prior);
   }, [q.data]);
+
+  // Track visited questions whenever idx changes
+  useEffect(() => {
+    const questions = q.data?.questions ?? [];
+    const current = questions[idx];
+    if (current) {
+      setVisited((prev) => new Set(prev).add(current.id));
+    }
+  }, [idx, q.data?.questions]);
 
   const submit = useMutation({
     mutationFn: () =>
@@ -101,6 +110,46 @@ function QuizRun() {
     setAnswers((prev) => ({ ...prev, [qid]: val }));
   }
 
+  function navigateTo(i: number) {
+    setIdx(i);
+  }
+
+  // Keyboard Shortcuts (1-4 select options, F to flag, Arrow keys to navigate)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (!current) return;
+
+      if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+        const optIdx = Number(e.key) - 1;
+        if (optIdx < current.options.length) {
+          const isMsq = current.type === 'msq';
+          const picked = answers[current.id] ?? [];
+          if (!isMsq) {
+            setAnswer(current.id, [optIdx]);
+          } else {
+            const next = picked.includes(optIdx)
+              ? picked.filter((x: number) => x !== optIdx)
+              : [...picked, optIdx].sort((a: number, b: number) => a - b);
+            setAnswer(current.id, next);
+          }
+        }
+      } else if (e.key === 'f' || e.key === 'F') {
+        setFlagged((prev) => {
+          const next = new Set(prev);
+          next.has(current.id) ? next.delete(current.id) : next.add(current.id);
+          return next;
+        });
+      } else if (e.key === 'ArrowRight' && idx < questions.length - 1) {
+        setIdx((i) => i + 1);
+      } else if (e.key === 'ArrowLeft' && idx > 0) {
+        setIdx((i) => i - 1);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [idx, questions.length, current, answers]);
+
   if (q.isLoading || !current) {
     return (
       <div className="min-h-screen">
@@ -116,9 +165,35 @@ function QuizRun() {
   const timerText = secondsLeft != null ? formatSeconds(secondsLeft) : null;
   const timerCritical = secondsLeft != null && secondsLeft < 60;
 
+  // Grid cell color logic
+  function getGridCellClass(qq: any, i: number) {
+    const isActive = i === idx;
+    const isFlagged = flagged.has(qq.id);
+    const isAnswered = answered.has(qq.id);
+    const isVisited = visited.has(qq.id);
+
+    let base = "";
+    if (isFlagged) {
+      base = "border-violet-500 bg-violet-500/25 text-violet-300 font-bold";
+    } else if (isAnswered) {
+      base = "border-emerald-500 bg-emerald-500/25 text-emerald-300 font-bold";
+    } else if (isVisited) {
+      base = "border-amber-500 bg-amber-500/20 text-amber-300 font-bold";
+    } else {
+      base = "border-border bg-secondary/40 text-muted-foreground";
+    }
+
+    if (isActive) {
+      return `${base} ring-2 ring-primary ring-offset-2 ring-offset-background scale-105 z-10`;
+    }
+    return base;
+  }
+
+  const isMsq = current.type === "msq";
+
   return (
     <div className="min-h-screen">
-      {!isSimulate && <AppHeader />}
+      <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex-1">
@@ -129,7 +204,9 @@ function QuizRun() {
             <Progress value={((idx + 1) / questions.length) * 100} className="h-1.5" />
           </div>
           {timerText && (
-            <div className={`rounded-lg border px-3 py-2 font-mono text-sm ${timerCritical ? "border-destructive/50 text-destructive animate-pulse" : "border-border"}`}>
+            <div className={`rounded-lg border px-3 py-2 font-mono text-sm tabular-nums ${
+              timerCritical ? "border-destructive/50 text-destructive animate-pulse bg-destructive/5" : "border-border text-foreground"
+            }`}>
               {timerText}
             </div>
           )}
@@ -155,26 +232,39 @@ function QuizRun() {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle>Questions</SheetTitle>
+                <SheetTitle>Question Navigator</SheetTitle>
               </SheetHeader>
+              {/* Legend */}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/60" />
+                  Answered
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded bg-violet-500/20 border border-violet-500/60" />
+                  Flagged
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded bg-yellow-500/10 border border-yellow-500/50" />
+                  Visited
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded bg-secondary/40 border border-border" />
+                  Not visited
+                </span>
+              </div>
               <div className="mt-4 grid grid-cols-6 gap-2">
                 {questions.map((qq: any, i: number) => {
                   const isFlagged = flagged.has(qq.id);
-                  const isAnswered = answered.has(qq.id);
-                  const isActive = i === idx;
                   return (
                     <button
                       key={qq.id}
-                      onClick={() => setIdx(i)}
-                      className={`relative h-10 rounded-md border text-sm font-medium transition ${
-                        isActive ? "border-primary bg-primary/10" :
-                        isAnswered ? "border-success/60 bg-success/10" :
-                        "border-border bg-secondary/40 text-muted-foreground"
-                      }`}
+                      onClick={() => navigateTo(i)}
+                      className={`relative h-10 rounded-md border text-sm font-medium transition-all hover:scale-105 ${getGridCellClass(qq, i)}`}
                     >
                       {i + 1}
                       {isFlagged && (
-                        <Flag className="absolute -right-1 -top-1 h-3 w-3 fill-warning text-warning" />
+                        <Flag className="absolute -right-1 -top-1 h-3 w-3 fill-violet-400 text-violet-400" />
                       )}
                     </button>
                   );
@@ -186,18 +276,30 @@ function QuizRun() {
 
         <div className="card-elevated p-6 animate-fade-up">
           <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase tracking-wide text-secondary-foreground">
-                {current.type === "mcq" ? "Single answer" : "Multiple answers"}
-              </span>
-              {current.type === "msq" && (
-                <span className="ml-2 text-xs text-muted-foreground">Select all that apply</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isMsq ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] uppercase tracking-wide font-bold text-amber-500">
+                  <CheckSquare className="w-3 h-3" />
+                  Multiple answers
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 px-2.5 py-0.5 text-[11px] uppercase tracking-wide font-bold text-sky-400">
+                  <Circle className="w-3 h-3" />
+                  Single answer
+                </span>
+              )}
+              {isMsq && (
+                <span className="text-xs text-amber-500/80">Select all that apply</span>
               )}
             </div>
             <Button
               variant={flagged.has(current.id) ? "default" : "outline"}
               size="sm"
-              className="gap-1"
+              className={`gap-1 shrink-0 ${
+                flagged.has(current.id)
+                  ? "bg-violet-600 hover:bg-violet-700 border-violet-600 text-white"
+                  : ""
+              }`}
               onClick={() => {
                 setFlagged((prev) => {
                   const next = new Set(prev);
@@ -213,7 +315,7 @@ function QuizRun() {
           <h2 className="text-lg font-semibold leading-relaxed">{current.question_text}</h2>
 
           <div className="mt-6 space-y-2">
-            {current.type === "mcq" ? (
+            {!isMsq ? (
               <RadioGroup
                 value={(answers[current.id]?.[0] ?? -1).toString()}
                 onValueChange={(v) => setAnswer(current.id, [Number(v)])}
@@ -231,38 +333,44 @@ function QuizRun() {
                 ))}
               </RadioGroup>
             ) : (
-              current.options.map((opt: string, i: number) => {
-                const picked = answers[current.id] ?? [];
-                const checked = picked.includes(i);
-                return (
-                  <label
-                    key={i}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${checked ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() =>
-                        setAnswer(
-                          current.id,
-                          checked ? picked.filter((x) => x !== i) : [...picked, i].sort((a, b) => a - b),
-                        )
-                      }
-                      className="mt-0.5"
-                    />
-                    <span className="text-sm leading-relaxed">{opt}</span>
-                  </label>
-                );
-              })
+              <div className="space-y-2">
+                {current.options.map((opt: string, i: number) => {
+                  const picked = answers[current.id] ?? [];
+                  const checked = picked.includes(i);
+                  return (
+                    <label
+                      key={i}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                        checked
+                          ? "border-amber-500/60 bg-amber-500/8"
+                          : "border-border hover:border-amber-500/40"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() =>
+                          setAnswer(
+                            current.id,
+                            checked ? picked.filter((x) => x !== i) : [...picked, i].sort((a, b) => a - b),
+                          )
+                        }
+                        className="mt-0.5 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                      />
+                      <span className="text-sm leading-relaxed">{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
 
         <div className="mt-6 flex items-center justify-between gap-2">
-          <Button variant="outline" disabled={idx === 0} onClick={() => setIdx(idx - 1)}>
+          <Button variant="outline" disabled={idx === 0} onClick={() => navigateTo(idx - 1)}>
             Previous
           </Button>
           {idx < questions.length - 1 ? (
-            <Button onClick={() => setIdx(idx + 1)}>Next</Button>
+            <Button onClick={() => navigateTo(idx + 1)}>Next</Button>
           ) : (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -290,6 +398,13 @@ function QuizRun() {
               </AlertDialogContent>
             </AlertDialog>
           )}
+        </div>
+
+        {/* Keyboard shortcut hint */}
+        <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-muted-foreground/70 font-medium">
+          <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border/60 text-[10px] font-mono">1-4</kbd> select answer</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border/60 text-[10px] font-mono">F</kbd> toggle flag</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-muted border border-border/60 text-[10px] font-mono">← →</kbd> navigate</span>
         </div>
       </main>
     </div>

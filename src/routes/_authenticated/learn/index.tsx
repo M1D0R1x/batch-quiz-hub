@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { listCourses } from '@/lib/quiz.functions';
 import { AppHeader } from '@/components/app-header';
-import { BookOpen, GraduationCap, ArrowRight, ChevronRight, Layers, ChevronDown, PlayCircle, Sparkles } from 'lucide-react';
+import { BookOpen, GraduationCap, ArrowRight, ChevronRight, Layers, ChevronDown, PlayCircle, Sparkles, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export const Route = createFileRoute('/_authenticated/learn/')({
   head: () => ({
@@ -31,6 +32,26 @@ function LearnOverviewPage() {
     setExpandedCourseId(expandedCourseId === courseId ? null : courseId);
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCourses = useMemo(() => {
+    if (!searchQuery.trim()) return courses;
+    const q = searchQuery.toLowerCase().trim();
+    return courses
+      .map((c) => {
+        const matchCourse = c.name.toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q);
+        const matchedSubs = (c.subtopics || []).filter((s: any) => s.name.toLowerCase().includes(q));
+        if (matchCourse || matchedSubs.length > 0) {
+          return {
+            ...c,
+            subtopics: matchCourse ? c.subtopics : matchedSubs,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }, [courses, searchQuery]);
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
@@ -45,16 +66,28 @@ function LearnOverviewPage() {
         </nav>
 
         {/* Header Title */}
-        <div className="space-y-2 animate-fade-up">
+        <div className="space-y-3 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <GraduationCap className="w-4 h-4" /> Flashcard Study Hub
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Select a Course to Begin Practice
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-sm max-w-2xl">
             Study entire courses with randomized flashcards or drill down into specific chapters.
           </p>
+
+          {/* Search bar */}
+          <div className="relative max-w-md pt-2">
+            <Search className="absolute left-3.5 top-5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Search courses & chapters..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 text-sm w-full bg-card"
+            />
+          </div>
         </div>
 
         {isLoading ? (
@@ -64,8 +97,8 @@ function LearnOverviewPage() {
           </div>
         ) : (
           <div className="space-y-6 animate-fade-up">
-            {courses.map((course) => {
-              const isExpanded = expandedCourseId === course.id;
+            {filteredCourses.map((course: any) => {
+              const isExpanded = expandedCourseId === course.id || !!searchQuery.trim();
               const subtopics = course.subtopics || [];
 
               return (
@@ -123,9 +156,14 @@ function LearnOverviewPage() {
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                              <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
-                                {subtopic.name}
-                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                                  {subtopic.name}
+                                </span>
+                                {subtopic.question_count != null && (
+                                  <span className="text-[11px] text-muted-foreground">{subtopic.question_count} flashcards</span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-primary font-semibold shrink-0">
                               <span>Learn</span>

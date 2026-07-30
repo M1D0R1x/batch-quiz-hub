@@ -1,13 +1,15 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef } from "react";
-import { Check, Flag, Home, RotateCcw, X, AlertTriangle, TrendingDown, BookOpen, Trophy } from "lucide-react";
+import { toast } from "sonner";
+import { Check, Flag, Home, RotateCcw, X, AlertTriangle, TrendingDown, BookOpen, Trophy, Target } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getAttemptResult } from "@/lib/quiz.functions";
+import { getAttemptResult, startWeakAreaAttempt } from "@/lib/quiz.functions";
+import { getCleanExplanation } from "@/lib/explanation.utils";
 import confetti from "canvas-confetti";
 
 export const Route = createFileRoute("/_authenticated/quiz/results/$attemptId")({
@@ -23,9 +25,23 @@ export const Route = createFileRoute("/_authenticated/quiz/results/$attemptId")(
 
 function Results() {
   const { attemptId } = useParams({ from: "/_authenticated/quiz/results/$attemptId" });
+  const navigate = useNavigate();
   const fn = useServerFn(getAttemptResult);
+  const startWeakFn = useServerFn(startWeakAreaAttempt);
+
   const q = useQuery({ queryKey: ["result", attemptId], queryFn: () => fn({ data: { attemptId } }) });
   const confettiFired = useRef(false);
+
+  const startWeakMutation = useMutation({
+    mutationFn: () => startWeakFn(),
+    onSuccess: (res) => {
+      toast.success(`Launched Weak-Area Practice with ${res.count} targeted questions!`);
+      navigate({ to: "/quiz/run/$attemptId", params: { attemptId: res.attemptId } });
+    },
+    onError: (e: any) => {
+      toast.error(e.message ?? "Failed to start weak-area drill");
+    },
+  });
 
   useEffect(() => {
     if (q.data && !confettiFired.current) {
@@ -106,12 +122,15 @@ function Results() {
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => startWeakMutation.mutate()} disabled={startWeakMutation.isPending} variant="secondary" className="gap-2 bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border border-amber-500/40">
+                <Target className="h-4 w-4" /> {startWeakMutation.isPending ? "Generating..." : "Retest Weak Areas"}
+              </Button>
               <Button asChild variant="outline">
                 <Link to="/dashboard"><Home className="mr-2 h-4 w-4" />Dashboard</Link>
               </Button>
               <Button asChild>
-                <Link to="/quiz/setup"><RotateCcw className="mr-2 h-4 w-4" />Retry</Link>
+                <Link to="/quiz/setup"><RotateCcw className="mr-2 h-4 w-4" />Retry Quiz</Link>
               </Button>
             </div>
           </div>
@@ -192,8 +211,10 @@ function Results() {
                 </ul>
                 {d.explanation && (
                   <div className="mt-3 rounded-md bg-secondary/60 p-3 text-sm">
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Explanation</div>
-                    <p className="leading-relaxed">{d.explanation}</p>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Explanation & Key Takeaway</div>
+                    <p className="leading-relaxed text-muted-foreground">
+                      {getCleanExplanation(d.explanation, d.options, d.correct_answers)}
+                    </p>
                   </div>
                 )}
               </div>
