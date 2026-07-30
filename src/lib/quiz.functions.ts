@@ -90,24 +90,30 @@ export const getMyProfile = createServerFn({ method: "GET" })
 export const completeOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
-    z.object({ displayName: z.string().min(1).max(80).optional() }).parse(d),
+    z
+      .object({
+        displayName: z.string().min(1).max(80).optional(),
+        avatarPreset: z.string().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     // Auto-assign the first available course (course track is optional)
-    const { data: firstCourse } = await context.supabase
-      .from("courses")
+    const { data: firstCourse } = await (context.supabase.from("courses" as any) as any)
       .select("id")
       .order("name")
       .limit(1)
       .maybeSingle();
 
-    const { error } = await context.supabase
-      .from("profiles")
-      .update({
-        course_track_id: firstCourse?.id ?? null,
-        display_name: data.displayName ?? undefined,
-        onboarded_at: new Date().toISOString(),
-      })
+    const updateData: Record<string, any> = {
+      course_track_id: firstCourse?.id ?? null,
+      onboarded_at: new Date().toISOString(),
+    };
+    if (data.displayName) updateData.display_name = data.displayName;
+    if (data.avatarPreset) updateData.avatar_preset = data.avatarPreset;
+
+    const { error } = await (context.supabase.from("profiles" as any) as any)
+      .update(updateData)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };

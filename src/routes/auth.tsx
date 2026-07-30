@@ -50,8 +50,8 @@ function AuthPage() {
           password,
         },
       });
-      toast.success("Account created!");
-      navigate({ to: "/onboarding" });
+      toast.success("Account created! Please sign in with your credentials.");
+      setMode("signin");
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
     } finally {

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
 import { AvatarPicker } from "@/components/avatar-picker";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { completeOnboarding, getMyProfile } from "@/lib/quiz.functions";
-import { updateProfile } from "@/lib/profile.functions";
 import { Sparkles, User2, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -28,7 +27,6 @@ function Onboarding() {
   const queryClient = useQueryClient();
   const meFn = useServerFn(getMyProfile);
   const finishFn = useServerFn(completeOnboarding);
-  const updateProfileFn = useServerFn(updateProfile);
 
   const profile = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
 
@@ -36,29 +34,31 @@ function Onboarding() {
   const [avatarId, setAvatarId] = useState("avatar_cloud_1");
   const [done, setDone] = useState(false);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: (data: { displayName?: string; avatarPreset?: string }) =>
-      updateProfileFn({ data }),
-    onError: (e: any) => toast.error(e.message ?? "Failed to update profile"),
-  });
+  useEffect(() => {
+    if (profile.data?.display_name) {
+      setName(profile.data.display_name);
+    }
+    if ((profile.data as any)?.avatar_preset) {
+      setAvatarId((profile.data as any).avatar_preset);
+    }
+  }, [profile.data]);
 
   const finish = useMutation({
-    mutationFn: (v: { displayName?: string }) => finishFn({ data: v }),
+    mutationFn: (v: { displayName?: string; avatarPreset?: string }) => finishFn({ data: v }),
     onSuccess: async () => {
-      await updateProfileMutation.mutateAsync({ avatarPreset: avatarId });
-      queryClient.invalidateQueries({ queryKey: ["me"] });
-      // Show celebration then redirect
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
       setDone(true);
       setTimeout(() => {
         nav({ to: "/dashboard" });
-      }, 1800);
+      }, 1500);
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+    onError: (e: any) => toast.error(e.message ?? "Failed to save profile"),
   });
 
   const handleSubmit = () => {
     finish.mutate({
       displayName: name.trim() || profile.data?.display_name || undefined,
+      avatarPreset: avatarId,
     });
   };
 
@@ -76,8 +76,8 @@ function Onboarding() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground">You're all set! 🎉</h1>
-            <p className="mt-2 text-muted-foreground">Welcome to the Oracle PaaS Training Platform.</p>
-            <p className="mt-1 text-sm text-muted-foreground">Taking you to the dashboard…</p>
+            <p className="mt-2 text-muted-foreground">Welcome to QuizForge Training Platform.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Taking you to your dashboard…</p>
           </div>
           {/* Sparkle dots */}
           <div className="flex justify-center gap-2">
@@ -97,39 +97,41 @@ function Onboarding() {
   return (
     <div className="min-h-screen bg-grid">
       <AppHeader />
-      <main className="mx-auto max-w-lg px-4 py-16">
-        <div className="animate-fade-up space-y-8">
+      <main className="mx-auto max-w-2xl px-4 py-12">
+        <div className="animate-fade-up space-y-6">
           {/* Header */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
               <User2 className="w-3.5 h-3.5" />
               Profile Setup
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Welcome to QuizForge!
             </h1>
-            <p className="text-muted-foreground">
-              Choose a display name and avatar to represent you on the leaderboard.
+            <p className="text-sm text-muted-foreground">
+              Set your full name and choose an avatar badge to represent you on the batch leaderboard.
             </p>
           </div>
 
           {/* Form card */}
-          <div className="card-elevated p-8 space-y-8">
+          <div className="card-elevated p-6 md:p-8 space-y-6">
             {/* Name input */}
             <div className="space-y-2">
               <Label htmlFor="dn" className="font-semibold text-sm">
-                Display Name
+                Full Name (Displayed on Leaderboard)
               </Label>
               <Input
                 id="dn"
-                placeholder={profile.data?.display_name ?? "Your full name"}
+                placeholder="e.g. Alex Kumar"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 className="text-base h-12"
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">This is how others see you on the leaderboard.</p>
+              <p className="text-xs text-muted-foreground">
+                This is the name your batchmates will see on the leaderboard.
+              </p>
             </div>
 
             {/* Avatar picker */}
@@ -139,16 +141,16 @@ function Onboarding() {
           {/* CTA */}
           <Button
             size="lg"
-            className="w-full h-13 text-base gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
-            disabled={finish.isPending || updateProfileMutation.isPending}
+            className="w-full h-12 text-base font-bold gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow cursor-pointer"
+            disabled={finish.isPending}
             onClick={handleSubmit}
           >
             <Sparkles className="w-5 h-5" />
-            {finish.isPending || updateProfileMutation.isPending ? "Setting up your account…" : "Start Learning 🚀"}
+            {finish.isPending ? "Saving Profile..." : "Start Learning & Practicing 🚀"}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            You can update your profile anytime from the header menu.
+            You can update your avatar and profile anytime from the top navigation bar.
           </p>
         </div>
       </main>
