@@ -126,7 +126,7 @@ export const adminListQuestions = createServerFn({ method: "GET" })
       query = query.ilike("question_text", `%${data.search}%`);
     }
 
-    const { data: questions, error } = await query.limit(200);
+    const { data: questions, error } = await query;
     if (error) throw new Error(error.message);
     return questions ?? [];
   });

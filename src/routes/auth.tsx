@@ -42,7 +42,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const res = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -50,8 +50,22 @@ function AuthPage() {
             data: { full_name: name || email.split("@")[0] },
           },
         });
-        if (error) throw error;
-        toast.success("Account created. Check your inbox to confirm your email.");
+        if (res.error) throw res.error;
+        
+        if (res.data.session) {
+          toast.success("Account created successfully!");
+          navigate({ to: "/onboarding" });
+        } else {
+          // Attempt instant sign-in if email confirmation is disabled in Supabase
+          const signRes = await supabase.auth.signInWithPassword({ email, password });
+          if (!signRes.error && signRes.data.session) {
+            toast.success("Account created!");
+            navigate({ to: "/onboarding" });
+          } else {
+            toast.success("Account created! You can now sign in.");
+            setMode("signin");
+          }
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

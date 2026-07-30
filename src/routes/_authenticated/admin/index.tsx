@@ -31,6 +31,7 @@ function AdminOverviewPage() {
   });
 
   const totalSubtopics = courses.reduce((acc, c) => acc + (c.subtopics?.length || 0), 0);
+  const totalQuestions = courses.reduce((acc, c) => acc + (c.questionCount || 0), 0) || questions.length;
 
   return (
     <div className="space-y-8">
@@ -52,7 +53,7 @@ function AdminOverviewPage() {
             <HelpCircle className="w-5 h-5 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{questions.length}</div>
+            <div className="text-3xl font-bold text-foreground">{totalQuestions}</div>
             <p className="text-xs text-muted-foreground mt-1">MCQ & MSQ Oracle Fusion items</p>
           </CardContent>
         </Card>
