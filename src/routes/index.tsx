@@ -51,7 +51,7 @@ function Landing() {
             <Link to="/auth">Sign in</Link>
           </Button>
           <Button asChild>
-            <Link to="/auth">Get started</Link>
+            <Link to="/auth" search={{ tab: "signup" }}>Get started</Link>
           </Button>
         </div>
       </header>
@@ -73,7 +73,7 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="gap-2">
-              <Link to="/auth">
+              <Link to="/auth" search={{ tab: "signup" }}>
                 Start practicing <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

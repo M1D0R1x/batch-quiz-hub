@@ -258,7 +258,7 @@ export const saveQuizProgress = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
-export const getInProgressAttempts = createServerFn({ method: 'GET' })
+export const getInProgressAttempts = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: attempts, error } = await context.supabase
@@ -294,6 +294,20 @@ export const getInProgressAttempts = createServerFn({ method: 'GET' })
       ).length,
       draftSavedAt: (a.answers as any)?.draft_saved_at ?? null,
     }));
+  });
+
+export const discardAttempt = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ attemptId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from('quiz_attempts')
+      .delete()
+      .eq('id', data.attemptId)
+      .eq('user_id', context.userId)
+      .is('completed_at', null);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 function scoreQuestion(type: "mcq" | "msq", correct: number[], picked: number[]): number {

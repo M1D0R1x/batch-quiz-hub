@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 
 function Onboarding() {
   const nav = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const meFn = useServerFn(getMyProfile);
   const finishFn = useServerFn(completeOnboarding);
@@ -49,7 +50,7 @@ function Onboarding() {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       setDone(true);
       setTimeout(() => {
-        nav({ to: "/dashboard" });
+        window.location.href = "/dashboard";
       }, 1500);
     },
     onError: (e: any) => toast.error(e.message ?? "Failed to save profile"),

@@ -113,7 +113,7 @@ export function AppHeader() {
                   aria-label="Sign out"
                   onClick={async () => {
                     await signOutAction();
-                    router.navigate({ to: "/auth" });
+                    window.location.href = "/auth";
                   }}
                   className="h-8 w-8"
                 >

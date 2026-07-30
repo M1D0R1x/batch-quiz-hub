@@ -75,7 +75,7 @@ export const signIn = createServerFn({ method: "POST" })
 
     // Find profile by username
     const { data: profile, error } = await (supabaseAdmin.from("profiles" as any) as any)
-      .select("id, password_hash, username")
+      .select("id, password_hash, username, onboarded_at")
       .ilike("username", username)
       .maybeSingle();
 
@@ -86,7 +86,7 @@ export const signIn = createServerFn({ method: "POST" })
     }
 
     setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, null), cookieOpts);
-    return { ok: true, userId: profile.id as string };
+    return { ok: true, userId: profile.id as string, onboarded: !!profile.onboarded_at };
   });
 
 export const setUsername = createServerFn({ method: "POST" })

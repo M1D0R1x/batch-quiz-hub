@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,9 @@ import { signUp, signIn } from "@/lib/auth.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab === "signup" ? "signup" : "signin") as "signin" | "signup",
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — QuizForge" },
@@ -29,7 +32,8 @@ function AuthPage() {
   const navigate = useNavigate();
   const signUpFn = useServerFn(signUp);
   const signInFn = useServerFn(signIn);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { tab } = useSearch({ from: "/auth" });
+  const [mode, setMode] = useState<"signin" | "signup">(tab);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -50,11 +54,10 @@ function AuthPage() {
           password,
         },
       });
-      toast.success("Account created! Please sign in with your credentials.");
-      setMode("signin");
+      toast.success("Account created! Redirecting to profile setup…");
+      window.location.href = "/onboarding";
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
-    } finally {
       setBusy(false);
     }
   }
@@ -63,17 +66,20 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      await signInFn({
+      const res = await signInFn({
         data: {
           username: username.trim(),
           password,
         },
       });
       toast.success("Signed in!");
-      navigate({ to: "/dashboard" });
+      if (!res.onboarded) {
+        window.location.href = "/onboarding";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
-    } finally {
       setBusy(false);
     }
   }

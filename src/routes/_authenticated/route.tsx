@@ -18,11 +18,19 @@ export const Route = createFileRoute("/_authenticated")({
     const session = await getSessionUser();
     if (!session?.userId) throw redirect({ to: "/auth" });
 
-    // Enforce onboarding on first login — redirect everywhere except /onboarding itself
+    // Enforce onboarding on first login — redirect everywhere except /onboarding itself.
+    // Wrap in try-catch so a transient profile-fetch failure doesn't break the whole app.
     if (location.pathname !== "/onboarding") {
-      const profile = await getMyProfile();
-      if (profile && !profile.onboarded_at) {
-        throw redirect({ to: "/onboarding" });
+      try {
+        const profile = await getMyProfile();
+        if (profile && !profile.onboarded_at) {
+          throw redirect({ to: "/onboarding" });
+        }
+      } catch (err: any) {
+        // If it's a redirect, re-throw it (TanStack Router uses thrown redirects)
+        if (err && typeof err === "object" && "to" in err) throw err;
+        // Otherwise swallow — let the page load and handle the error gracefully
+        console.warn("[auth guard] Could not check onboarding status:", err?.message);
       }
     }
 
@@ -30,3 +38,4 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: AuthenticatedLayout,
 });
+

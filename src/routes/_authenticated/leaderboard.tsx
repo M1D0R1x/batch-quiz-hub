@@ -58,6 +58,8 @@ function LeaderboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['leaderboard', category, period],
     queryFn: () => leaderboardFn({ data: { category, period } }),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const entries = data?.entries ?? [];

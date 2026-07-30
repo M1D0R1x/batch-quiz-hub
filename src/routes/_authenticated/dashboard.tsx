@@ -1,13 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
 import { toast } from "sonner";
-import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles, Pause } from "lucide-react";
+import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles, Pause, Trash2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts } from "@/lib/quiz.functions";
+import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts, discardAttempt } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
 import { TeamCredits } from "@/components/team-credits";
 
@@ -24,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const nav = useNavigate();
+  const queryClient = useQueryClient();
   const statsFn = useServerFn(getDashboardStats);
   const listFn = useServerFn(listCourses);
   const meFn = useServerFn(getMyProfile);
@@ -32,13 +32,28 @@ function Dashboard() {
   const weakFn = useServerFn(getWeakAreaStats);
   const startWeakFn = useServerFn(startWeakAreaAttempt);
   const inProgressFn = useServerFn(getInProgressAttempts);
+  const discardFn = useServerFn(discardAttempt);
 
   const me = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const stats = useQuery({ queryKey: ["dashboard-stats"], queryFn: () => statsFn() });
   const courses = useQuery({ queryKey: ["courses"], queryFn: () => listFn() });
   const weakStats = useQuery({ queryKey: ["weak-area-stats"], queryFn: () => weakFn() });
   const { data: roleInfo } = useQuery({ queryKey: ["myRole"], queryFn: () => roleFn() });
-  const inProgress = useQuery({ queryKey: ['in-progress-attempts'], queryFn: () => inProgressFn() });
+  const inProgress = useQuery({
+    queryKey: ['in-progress-attempts'],
+    queryFn: () => inProgressFn(),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const discardMutation = useMutation({
+    mutationFn: (attemptId: string) => discardFn({ data: { attemptId } }),
+    onSuccess: () => {
+      toast.success("Paused attempt discarded.");
+      queryClient.invalidateQueries({ queryKey: ['in-progress-attempts'] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to discard attempt"),
+  });
 
   const startWeakMutation = useMutation({
     mutationFn: () => startWeakFn(),
@@ -51,9 +66,8 @@ function Dashboard() {
     },
   });
 
-  useEffect(() => {
-    if (me.data && !me.data.onboarded_at) nav({ to: "/onboarding" });
-  }, [me.data, nav]);
+  // Onboarding enforcement is handled by the /_authenticated route guard.
+  // No need to duplicate it here.
 
   return (
     <div className="min-h-screen">
@@ -132,10 +146,13 @@ function Dashboard() {
         {/* In-Progress / Paused Quizzes */}
         {inProgress.data && inProgress.data.length > 0 && (
           <div className="space-y-3 animate-fade-up">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Pause className="h-4 w-4 text-primary" />
-              Resume where you left off
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Pause className="h-4 w-4 text-primary" />
+                Resume where you left off
+              </h2>
+              <span className="text-xs text-muted-foreground">{inProgress.data.length} paused quiz{inProgress.data.length > 1 ? 'zes' : ''}</span>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               {inProgress.data.map((attempt: any) => (
                 <div
@@ -144,23 +161,42 @@ function Dashboard() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shrink-0">
-                      <Play className="w-4 h-4" />
+                      {attempt.isSimulate ? <Timer className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-foreground text-sm truncate">{attempt.courseName}</h3>
-                      <p className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground text-sm truncate">{attempt.courseName}</h3>
+                        {attempt.isSimulate && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 uppercase">
+                            Simulate
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {attempt.answeredCount}/{attempt.questionCount} answered
                         {attempt.draftSavedAt && (
-                          <> · saved {new Date(attempt.draftSavedAt).toLocaleString()}</>
+                          <> · saved {new Date(attempt.draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
                         )}
                       </p>
                     </div>
                   </div>
-                  <Button asChild size="sm" className="gap-1.5 shrink-0">
-                    <Link to="/quiz/run/$attemptId" params={{ attemptId: attempt.id }}>
-                      Resume <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Discard this paused quiz"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      disabled={discardMutation.isPending}
+                      onClick={() => discardMutation.mutate(attempt.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button asChild size="sm" className="gap-1.5">
+                      <Link to="/quiz/run/$attemptId" params={{ attemptId: attempt.id }}>
+                        Resume <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -64,6 +64,22 @@ function QuizRun() {
       nav({ to: "/quiz/results/$attemptId", params: { attemptId } });
       return;
     }
+
+    // Always restore draft state from server (saved by pause or auto-save)
+    const savedAnswers = (q.data.attempt as any).answers;
+    if (savedAnswers?.draft_answers) {
+      setAnswers(savedAnswers.draft_answers);
+      if (savedAnswers.draft_flagged) {
+        setFlagged(new Set(savedAnswers.draft_flagged));
+      }
+      if (typeof savedAnswers.draft_index === 'number') {
+        setIdx(savedAnswers.draft_index);
+      }
+    } else if (savedAnswers?.picked) {
+      // Legacy fallback
+      setAnswers(savedAnswers.picked);
+    }
+
     if (time_limit_seconds) {
       const end = new Date(started_at).getTime() + time_limit_seconds * 1000;
       const tick = () => {
@@ -78,20 +94,6 @@ function QuizRun() {
       const iv = setInterval(tick, 1000);
       return () => clearInterval(iv);
     }
-    // Restore draft state from server (saved by pause or auto-save)
-    const savedAnswers = (q.data.attempt as any).answers;
-    if (savedAnswers?.draft_answers) {
-      setAnswers(savedAnswers.draft_answers);
-      if (savedAnswers.draft_flagged) {
-        setFlagged(new Set(savedAnswers.draft_flagged));
-      }
-      if (typeof savedAnswers.draft_index === 'number') {
-        setIdx(savedAnswers.draft_index);
-      }
-    } else if (savedAnswers?.picked) {
-      // Legacy fallback
-      setAnswers(savedAnswers.picked);
-    }
   }, [q.data]);
 
   // Track visited questions whenever idx changes
@@ -103,14 +105,12 @@ function QuizRun() {
     }
   }, [idx, q.data?.questions]);
 
-  // Auto-save progress every 30 seconds
-  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Auto-save progress on every answer, flag, or question navigation (debounced 500ms)
   useEffect(() => {
     if (!q.data || q.data.attempt.completed_at) return;
-    // Clear any existing interval
-    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    
-    autoSaveRef.current = setInterval(() => {
+    if (Object.keys(answers).length === 0 && flagged.size === 0 && idx === 0) return;
+
+    const timer = setTimeout(() => {
       saveFn({
         data: {
           attemptId,
@@ -118,12 +118,10 @@ function QuizRun() {
           flagged: Array.from(flagged),
           currentIndex: idx,
         },
-      }).catch(() => {}); // Silent auto-save, don't toast on failure
-    }, 30_000);
-    
-    return () => {
-      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    };
+      }).catch(() => {});
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [q.data, answers, flagged, idx]);
 
   const submit = useMutation({
@@ -246,31 +244,29 @@ function QuizRun() {
               {timerText}
             </div>
           )}
-          {!isSimulate && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await saveFn({
-                    data: {
-                      attemptId,
-                      answers,
-                      flagged: Array.from(flagged),
-                      currentIndex: idx,
-                    },
-                  });
-                  toast.success('Quiz paused! Resume anytime from your dashboard.');
-                } catch {
-                  toast.error('Failed to save progress');
-                }
-                nav({ to: '/dashboard' });
-              }}
-              className="gap-1.5 text-xs h-9"
-            >
-              <Pause className="h-3.5 w-3.5" /> Pause Quiz
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                await saveFn({
+                  data: {
+                    attemptId,
+                    answers,
+                    flagged: Array.from(flagged),
+                    currentIndex: idx,
+                  },
+                });
+                toast.success('Quiz paused! Resume anytime from your dashboard.');
+              } catch {
+                toast.error('Failed to save progress');
+              }
+              window.location.href = '/dashboard';
+            }}
+            className="gap-1.5 text-xs h-9"
+          >
+            <Pause className="h-3.5 w-3.5" /> Pause Quiz
+          </Button>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" aria-label="Question grid">

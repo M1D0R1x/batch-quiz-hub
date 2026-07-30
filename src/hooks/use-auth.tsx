@@ -15,9 +15,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    getSessionUserFn().then((session) => {
-      if (!cancelled) setState({ userId: session?.userId ?? null, loading: false });
-    });
+    getSessionUserFn()
+      .then((session) => {
+        if (!cancelled) setState({ userId: session?.userId ?? null, loading: false });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ userId: null, loading: false });
+      });
     return () => {
       cancelled = true;
     };
