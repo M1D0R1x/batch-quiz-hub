@@ -19,6 +19,33 @@ export const getMyRole = createServerFn({ method: "GET" })
     };
   });
 
+export const getAdminStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { count: courseCount } = await context.supabase
+      .from("courses")
+      .select("*", { count: "exact", head: true });
+
+    const { count: subtopicCount } = await context.supabase
+      .from("subtopics")
+      .select("*", { count: "exact", head: true });
+
+    const { count: questionCount } = await context.supabase
+      .from("questions")
+      .select("*", { count: "exact", head: true });
+
+    const { count: userCount } = await context.supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
+
+    return {
+      courseCount: courseCount ?? 0,
+      subtopicCount: subtopicCount ?? 0,
+      questionCount: questionCount ?? 0,
+      userCount: userCount ?? 0,
+    };
+  });
+
 export const adminListCourses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -36,7 +63,8 @@ export const adminListCourses = createServerFn({ method: "GET" })
 
     const { data: questions, error: qErr } = await context.supabase
       .from("questions")
-      .select("id, subtopic_id");
+      .select("id, subtopic_id")
+      .limit(5000);
     if (qErr) throw new Error(qErr.message);
 
     return (courses ?? []).map((course) => {

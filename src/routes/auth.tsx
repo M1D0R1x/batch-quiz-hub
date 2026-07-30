@@ -50,7 +50,20 @@ function AuthPage() {
             data: { full_name: name || email.split("@")[0] },
           },
         });
-        if (res.error) throw res.error;
+
+        if (res.error) {
+          // If rate-limited on sign up (HTTP 429), fallback to direct sign in attempt
+          if ((res.error as any).status === 429 || res.error.message?.toLowerCase().includes("rate limit") || res.error.message?.includes("429")) {
+            const fallbackSign = await supabase.auth.signInWithPassword({ email, password });
+            if (fallbackSign.data?.session) {
+              toast.success("Welcome back!");
+              navigate({ to: "/dashboard" });
+              return;
+            }
+            throw new Error("Sign-up rate limit reached. If you already created an account, please switch to 'Sign in'.");
+          }
+          throw res.error;
+        }
         
         if (res.data.session) {
           toast.success("Account created successfully!");

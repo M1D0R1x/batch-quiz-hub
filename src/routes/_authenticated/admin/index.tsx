@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { adminListCourses, adminListQuestions, adminListUsers } from '@/lib/admin.functions';
+import { adminListCourses, adminListUsers, getAdminStats } from '@/lib/admin.functions';
 import { BookOpen, HelpCircle, Users, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,17 +12,17 @@ export const Route = createFileRoute('/_authenticated/admin/')({
 
 function AdminOverviewPage() {
   const listCoursesFn = useServerFn(adminListCourses);
-  const listQuestionsFn = useServerFn(adminListQuestions);
   const listUsersFn = useServerFn(adminListUsers);
+  const getStatsFn = useServerFn(getAdminStats);
+
+  const { data: stats } = useQuery({
+    queryKey: ['adminStats'],
+    queryFn: () => getStatsFn(),
+  });
 
   const { data: courses = [] } = useQuery({
     queryKey: ['adminCourses'],
     queryFn: () => listCoursesFn(),
-  });
-
-  const { data: questions = [] } = useQuery({
-    queryKey: ['adminQuestions'],
-    queryFn: () => listQuestionsFn({ data: {} }),
   });
 
   const { data: users = [] } = useQuery({
@@ -30,8 +30,10 @@ function AdminOverviewPage() {
     queryFn: () => listUsersFn(),
   });
 
-  const totalSubtopics = courses.reduce((acc, c) => acc + (c.subtopics?.length || 0), 0);
-  const totalQuestions = courses.reduce((acc, c) => acc + (c.questionCount || 0), 0) || questions.length;
+  const totalCourses = stats?.courseCount ?? courses.length;
+  const totalSubtopics = stats?.subtopicCount ?? courses.reduce((acc, c) => acc + (c.subtopics?.length || 0), 0);
+  const totalQuestions = stats?.questionCount ?? 0;
+  const totalUsers = stats?.userCount ?? users.length;
 
   return (
     <div className="space-y-8">
@@ -42,7 +44,7 @@ function AdminOverviewPage() {
             <BookOpen className="w-5 h-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{courses.length}</div>
+            <div className="text-3xl font-bold text-foreground">{totalCourses}</div>
             <p className="text-xs text-muted-foreground mt-1">{totalSubtopics} total subtopics configured</p>
           </CardContent>
         </Card>
@@ -64,7 +66,7 @@ function AdminOverviewPage() {
             <Users className="w-5 h-5 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{users.length}</div>
+            <div className="text-3xl font-bold text-foreground">{totalUsers}</div>
             <p className="text-xs text-muted-foreground mt-1">Batch participants enrolled</p>
           </CardContent>
         </Card>
