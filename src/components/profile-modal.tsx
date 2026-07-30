@@ -99,7 +99,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               </div>
               {(profile as any)?.username && (
                 <p className="text-xs text-muted-foreground mt-1 font-mono">
-                  @{(profile as any).username} {(profile as any).contact_email ? `· ${(profile as any).contact_email}` : ''}
+                  @{(profile as any).username}
                 </p>
               )}
             </div>

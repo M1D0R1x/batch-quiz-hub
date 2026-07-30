@@ -20,8 +20,8 @@ export const signUp = createServerFn({ method: "POST" })
       .object({
         username: z
           .string()
-          .regex(USERNAME_RE, "3-30 characters: letters, numbers, '.', '_' or '-' only."),
-        contactEmail: z.string().email("Please enter a valid email address."),
+          .regex(USERNAME_RE, "Username must be 3-30 characters: letters, numbers, '.', '_' or '-' only."),
+        displayName: z.string().min(1, "Please enter your full name for the leaderboard.").optional(),
         password: z.string().min(6, "Password must be at least 6 characters."),
       })
       .parse(d),
@@ -31,7 +31,7 @@ export const signUp = createServerFn({ method: "POST" })
     const { hashPassword, createSessionToken } = await import("./session.server");
 
     const username = data.username.trim();
-    const contactEmail = data.contactEmail.trim().toLowerCase();
+    const displayName = data.displayName?.trim() || username;
 
     // Check if username is taken
     const { data: existingUser } = await (supabaseAdmin.from("profiles" as any) as any)
@@ -43,28 +43,18 @@ export const signUp = createServerFn({ method: "POST" })
       throw new Error("That username is taken. Try a different one, or sign in instead.");
     }
 
-    // Check if email is already registered
-    const { data: existingEmail } = await (supabaseAdmin.from("profiles" as any) as any)
-      .select("id")
-      .ilike("contact_email", contactEmail)
-      .maybeSingle();
-
-    if (existingEmail) {
-      throw new Error("An account with this email address already exists. Try signing in instead.");
-    }
-
     const { data: profile, error } = await (supabaseAdmin.from("profiles" as any) as any)
       .insert({
         username,
-        contact_email: contactEmail,
         password_hash: hashPassword(data.password),
-        display_name: username,
+        display_name: displayName,
       })
-      .select("id, contact_email")
+      .select("id, username")
       .single();
+
     if (error) throw new Error(error.message);
 
-    setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, profile.contact_email), cookieOpts);
+    setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, null), cookieOpts);
     return { ok: true, userId: profile.id as string };
   });
 
@@ -72,7 +62,7 @@ export const signIn = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
     z
       .object({
-        loginIdentifier: z.string().min(1, "Enter your username or email."),
+        username: z.string().min(1, "Enter your username."),
         password: z.string().min(1, "Enter your password."),
       })
       .parse(d),
@@ -81,31 +71,21 @@ export const signIn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { verifyPassword, createSessionToken } = await import("./session.server");
 
-    const identifier = data.loginIdentifier.trim();
+    const username = data.username.trim();
 
-    // Try finding profile by username first
-    let { data: profile, error } = await (supabaseAdmin.from("profiles" as any) as any)
-      .select("id, password_hash, contact_email, username")
-      .ilike("username", identifier)
+    // Find profile by username
+    const { data: profile, error } = await (supabaseAdmin.from("profiles" as any) as any)
+      .select("id, password_hash, username")
+      .ilike("username", username)
       .maybeSingle();
 
     if (error) throw new Error(error.message);
 
-    // If not found by username, try by contact_email
-    if (!profile) {
-      const { data: profileByEmail, error: emailError } = await (supabaseAdmin.from("profiles" as any) as any)
-        .select("id, password_hash, contact_email, username")
-        .ilike("contact_email", identifier)
-        .maybeSingle();
-      if (emailError) throw new Error(emailError.message);
-      profile = profileByEmail;
-    }
-
     if (!profile?.password_hash || !verifyPassword(data.password, profile.password_hash)) {
-      throw new Error("Incorrect username/email or password.");
+      throw new Error("Incorrect username or password.");
     }
 
-    setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, profile.contact_email), cookieOpts);
+    setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, null), cookieOpts);
     return { ok: true, userId: profile.id as string };
   });
 
@@ -116,7 +96,7 @@ export const setUsername = createServerFn({ method: "POST" })
       .object({
         username: z
           .string()
-          .regex(USERNAME_RE, "3-30 characters: letters, numbers, '.', '_' or '-' only."),
+          .regex(USERNAME_RE, "Username must be 3-30 characters: letters, numbers, '.', '_' or '-' only."),
       })
       .parse(d),
   )
@@ -137,7 +117,6 @@ export const setUsername = createServerFn({ method: "POST" })
     const { error } = await (supabaseAdmin.from("profiles" as any) as any)
       .update({
         username,
-        display_name: username,
       })
       .eq("id", context.userId);
 

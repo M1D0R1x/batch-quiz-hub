@@ -67,7 +67,7 @@ export const SetUsernameModal: React.FC = () => {
             Create Your Username 🚀
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Welcome back! Please set a unique username for your account. You will be able to sign in using either your username or email address.
+            Welcome back! Please choose a unique username for your account to sign in.
           </p>
         </div>
 

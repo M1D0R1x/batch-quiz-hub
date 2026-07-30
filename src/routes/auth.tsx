@@ -31,7 +31,7 @@ function AuthPage() {
   const signInFn = useServerFn(signIn);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [username, setUsername] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +46,7 @@ function AuthPage() {
       await signUpFn({
         data: {
           username: username.trim(),
-          contactEmail: contactEmail.trim(),
+          displayName: displayName.trim(),
           password,
         },
       });
@@ -65,7 +65,7 @@ function AuthPage() {
     try {
       await signInFn({
         data: {
-          loginIdentifier: username.trim(),
+          username: username.trim(),
           password,
         },
       });
@@ -103,11 +103,11 @@ function AuthPage() {
             <TabsContent value="signin" className="mt-6">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username or Email</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
-                    autoComplete="username email"
-                    placeholder="alex_kumar or alex@example.com"
+                    autoComplete="username"
+                    placeholder="alex_kumar"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -133,7 +133,7 @@ function AuthPage() {
             <TabsContent value="signup" className="mt-6">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username2">Username</Label>
+                  <Label htmlFor="username2">Username (for Sign in)</Label>
                   <Input
                     id="username2"
                     autoComplete="username"
@@ -147,17 +147,17 @@ function AuthPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email2">Email address</Label>
+                  <Label htmlFor="displayName">Full Name (for Leaderboard)</Label>
                   <Input
-                    id="email2"
-                    type="email"
+                    id="displayName"
+                    type="text"
                     required
-                    placeholder="alex@example.com"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="Alex Kumar"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    You can use either your email or username to sign in.
+                    This name will be displayed on the Leaderboard and your profile.
                   </p>
                 </div>
                 <div className="space-y-2">
