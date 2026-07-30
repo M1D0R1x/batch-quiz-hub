@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
-import { signUp, signIn } from '@/lib/auth.functions';
-import { useServerFn } from '@tanstack/react-start';
+import { signUp, signIn } from "@/lib/auth.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -43,11 +43,17 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      await signUpFn({ data: { username: username.trim(), password, contactEmail: contactEmail.trim() } });
-      toast.success('Account created!');
-      navigate({ to: '/onboarding' });
+      await signUpFn({
+        data: {
+          username: username.trim(),
+          contactEmail: contactEmail.trim(),
+          password,
+        },
+      });
+      toast.success("Account created!");
+      navigate({ to: "/onboarding" });
     } catch (err: any) {
-      toast.error(err.message ?? 'Something went wrong');
+      toast.error(err.message ?? "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -57,11 +63,16 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      await signInFn({ data: { username: username.trim(), password } });
-      toast.success('Signed in!');
-      navigate({ to: '/dashboard' });
+      await signInFn({
+        data: {
+          loginIdentifier: username.trim(),
+          password,
+        },
+      });
+      toast.success("Signed in!");
+      navigate({ to: "/dashboard" });
     } catch (err: any) {
-      toast.error(err.message ?? 'Something went wrong');
+      toast.error(err.message ?? "Something went wrong");
     } finally {
       setBusy(false);
     }
@@ -92,10 +103,11 @@ function AuthPage() {
             <TabsContent value="signin" className="mt-6">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">Username or Email</Label>
                   <Input
                     id="username"
-                    autoComplete="username"
+                    autoComplete="username email"
+                    placeholder="alex_kumar or alex@example.com"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -131,22 +143,34 @@ function AuthPage() {
                     onChange={(e) => setUsername(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    3-30 characters. Letters, numbers, '.', '_' or '-' only. This is what you'll use to sign in.
+                    3-30 characters: letters, numbers, '.', '_' or '-' only.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email2">Email (optional)</Label>
+                  <Label htmlFor="email2">Email address</Label>
                   <Input
                     id="email2"
                     type="email"
-                    placeholder="for account recovery only"
+                    required
+                    placeholder="alex@example.com"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    You can use either your email or username to sign in.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pw2">Password</Label>
-                  <Input id="pw2" type="password" autoComplete="new-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input
+                    id="pw2"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy ? "Creating account…" : "Create account"}

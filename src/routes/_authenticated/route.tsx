@@ -1,6 +1,16 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { getSessionUser } from "@/lib/auth.functions";
 import { getMyProfile } from "@/lib/quiz.functions";
+import { SetUsernameModal } from "@/components/set-username-modal";
+
+function AuthenticatedLayout() {
+  return (
+    <>
+      <Outlet />
+      <SetUsernameModal />
+    </>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -18,5 +28,5 @@ export const Route = createFileRoute("/_authenticated")({
 
     return { userId: session.userId };
   },
-  component: () => <Outlet />,
+  component: AuthenticatedLayout,
 });

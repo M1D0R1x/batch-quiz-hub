@@ -79,9 +79,8 @@ export const getCourseDetail = createServerFn({ method: "GET" })
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, avatar_preset, show_on_leaderboard, course_track_id, onboarded_at")
+    const { data, error } = await (context.supabase.from("profiles" as any) as any)
+      .select("id, username, contact_email, display_name, avatar_url, avatar_preset, show_on_leaderboard, course_track_id, onboarded_at")
       .eq("id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);

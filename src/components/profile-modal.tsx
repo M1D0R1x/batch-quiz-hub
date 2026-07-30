@@ -97,6 +97,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   </span>
                 )}
               </div>
+              {(profile as any)?.username && (
+                <p className="text-xs text-muted-foreground mt-1 font-mono">
+                  @{(profile as any).username} {(profile as any).contact_email ? `· ${(profile as any).contact_email}` : ''}
+                </p>
+              )}
             </div>
           </div>
           <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 rounded-full">

@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, Sparkles, Timer, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
+import { TeamCredits } from "@/components/team-credits";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -97,6 +98,10 @@ function Landing() {
             </div>
           ))}
         </section>
+
+        <div className="mx-auto mt-20 max-w-5xl">
+          <TeamCredits />
+        </div>
       </main>
     </div>
   );

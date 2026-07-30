@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
+import { TeamCredits } from "@/components/team-credits";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -260,6 +261,8 @@ function Dashboard() {
             </div>
           </section>
         )}
+
+        <TeamCredits />
       </main>
     </div>
   );
