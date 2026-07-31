@@ -54,7 +54,8 @@ export const signUp = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    setCookie(SESSION_COOKIE_NAME, createSessionToken(profile.id, null), cookieOpts);
+    // Intentionally no session cookie here — sign-up only creates the account.
+    // The user signs in afterward with their new username/password.
     return { ok: true, userId: profile.id as string };
   });
 
@@ -125,7 +126,10 @@ export const setUsername = createServerFn({ method: "POST" })
   });
 
 export const signOutFn = createServerFn({ method: "POST" }).handler(async () => {
-  deleteCookie(SESSION_COOKIE_NAME);
+  // Must match the same path/sameSite/secure attributes used when the cookie
+  // was set, or the browser won't recognize this as the same cookie and the
+  // old session cookie silently survives "logout".
+  deleteCookie(SESSION_COOKIE_NAME, { path: "/" });
   return { ok: true };
 });
 

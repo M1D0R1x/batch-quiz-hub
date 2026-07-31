@@ -7,7 +7,17 @@ type AuthState = {
   loading: boolean;
 };
 
-const AuthContext = createContext<AuthState>({ userId: null, loading: true });
+type AuthContextValue = AuthState & {
+  /** Call right after logging out to clear local auth state immediately,
+   * instead of waiting for the next navigation to discover the cookie is gone. */
+  clearSession: () => void;
+};
+
+const AuthContext = createContext<AuthContextValue>({
+  userId: null,
+  loading: true,
+  clearSession: () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ userId: null, loading: true });
@@ -15,19 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    getSessionUserFn()
-      .then((session) => {
-        if (!cancelled) setState({ userId: session?.userId ?? null, loading: false });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ userId: null, loading: false });
-      });
+    getSessionUserFn().then((session) => {
+      if (!cancelled) setState({ userId: session?.userId ?? null, loading: false });
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>;
+  const clearSession = () => setState({ userId: null, loading: false });
+
+  return (
+    <AuthContext.Provider value={{ ...state, clearSession }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

@@ -20,6 +20,7 @@ export function AppHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [pwaModalOpen, setPwaModalOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const meFn = useServerFn(getMyProfile);
   const roleFn = useServerFn(getMyRole);
@@ -111,9 +112,17 @@ export function AppHeader() {
                   variant="ghost"
                   size="icon"
                   aria-label="Sign out"
+                  disabled={signingOut}
                   onClick={async () => {
-                    await signOutAction();
-                    window.location.href = "/auth";
+                    setSigningOut(true);
+                    try {
+                      await signOutAction();
+                      toast.success("Signed out");
+                    } finally {
+                      // Full reload guarantees every cached query and auth
+                      // context resets clean, no stale "still logged in" UI.
+                      window.location.href = "/auth";
+                    }
                   }}
                   className="h-8 w-8"
                 >
