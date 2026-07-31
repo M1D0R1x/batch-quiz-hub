@@ -11,11 +11,10 @@ export const getMyRole = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .maybeSingle();
 
-    const isRootAdmin = context.claims?.email === "veerababusaviti21@gmail.com";
     return {
-      role: data?.role || (isRootAdmin ? "super_admin" : "user"),
-      isAdmin: data?.role === "super_admin" || data?.role === "admin" || isRootAdmin,
-      isSuperAdmin: data?.role === "super_admin" || isRootAdmin,
+      role: data?.role || "user",
+      isAdmin: data?.role === "super_admin" || data?.role === "admin",
+      isSuperAdmin: data?.role === "super_admin",
     };
   });
 
@@ -218,18 +217,10 @@ export const adminListUsers = createServerFn({ method: "GET" })
 
     const roleMap = new Map((roles ?? []).map((r: any) => [r.user_id, r.role]));
 
-    const currentIsRoot = context.claims?.email === "veerababusaviti21@gmail.com";
-
-    return (profiles ?? []).map((p) => {
-      let role = roleMap.get(p.id) || "user";
-      if (p.id === context.userId && currentIsRoot) {
-        role = "super_admin";
-      }
-      return {
-        ...p,
-        role,
-      };
-    });
+    return (profiles ?? []).map((p) => ({
+      ...p,
+      role: roleMap.get(p.id) || "user",
+    }));
   });
 
 export const adminSetUserRole = createServerFn({ method: "POST" })
@@ -249,7 +240,7 @@ export const adminSetUserRole = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .maybeSingle();
 
-    const isSuperAdmin = (roleRecord as any)?.role === "super_admin" || context.claims?.email === "veerababusaviti21@gmail.com";
+    const isSuperAdmin = (roleRecord as any)?.role === "super_admin";
     if (!isSuperAdmin) {
       throw new Error("Forbidden: Only Super Admin can change user roles.");
     }
