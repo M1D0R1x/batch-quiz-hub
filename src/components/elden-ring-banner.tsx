@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useEldenRing } from "@/hooks/use-elden-ring";
+import { useEldenRing, getMediaUrl } from "@/hooks/use-elden-ring";
 
 export type EldenRingBannerType = "GOD_SLAIN" | "DEMIGOD_FELLED" | "YOU_DIED" | null;
 
@@ -27,7 +27,7 @@ export function EldenRingBanner({ type, onClose }: EldenRingBannerProps) {
       }
 
       try {
-        const audio = new Audio(audioPath);
+        const audio = new Audio(getMediaUrl(audioPath));
         audio.volume = 0.6;
         audio.play().catch(() => {});
       } catch (e) {}

@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
 // (HTML pages, server function calls, API requests) must always go to
 // the network — this app's content is auth-dependent and must never be
 // served stale from a cache.
-const STATIC_ASSET_RE = /\.(js|css|png|jpg|jpeg|svg|ico|woff2?|ttf)$/;
+const STATIC_ASSET_RE = /\.(js|css|png|jpg|jpeg|svg|ico|woff2?|ttf|mp3|wav|webm)$/;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

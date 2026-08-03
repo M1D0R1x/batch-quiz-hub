@@ -15,13 +15,19 @@ const EldenRingContext = createContext<EldenRingContextType | undefined>(undefin
 
 const KEY = "qf-elden-ring-mode";
 const MUSIC_KEY = "qf-elden-ring-music";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/M1D0R1x/batch-quiz-hub@master/public";
+
+export function getMediaUrl(relPath: string): string {
+  const path = relPath.startsWith("/") ? relPath : `/${relPath}`;
+  return `${CDN_BASE}${path}`;
+}
 
 export const TRACKS = [
-  { id: "eldenringost", name: "Main Theme", src: "/elden-ring-music/eldenringost.mp3" },
-  { id: "leyndellost", name: "Leyndell, Royal Capital", src: "/elden-ring-music/leyndellost.mp3" },
-  { id: "limgraveost", name: "Limgrave Ambient", src: "/elden-ring-music/limgraveost.mp3" },
-  { id: "roundtableost", name: "Roundtable Hold", src: "/elden-ring-music/roundtableost.mp3" },
-  { id: "siofraost", name: "Siofra River", src: "/elden-ring-music/siofraost.mp3" },
+  { id: "eldenringost", name: "Main Theme", src: getMediaUrl("/elden-ring-music/eldenringost.mp3") },
+  { id: "leyndellost", name: "Leyndell, Royal Capital", src: getMediaUrl("/elden-ring-music/leyndellost.mp3") },
+  { id: "limgraveost", name: "Limgrave Ambient", src: getMediaUrl("/elden-ring-music/limgraveost.mp3") },
+  { id: "roundtableost", name: "Roundtable Hold", src: getMediaUrl("/elden-ring-music/roundtableost.mp3") },
+  { id: "siofraost", name: "Siofra River", src: getMediaUrl("/elden-ring-music/siofraost.mp3") },
 ];
 
 export function EldenRingProvider({ children }: { children: ReactNode }) {
@@ -101,6 +107,54 @@ export function EldenRingProvider({ children }: { children: ReactNode }) {
     };
   }, [isEldenRing, isDarkTheme]);
 
+  // Progressive Low-Priority Background Media Preloader & Caching
+  useEffect(() => {
+    if (!isEldenRing) return;
+
+    const assetsToCache = [
+      "/elden-ring-sounds/key1.mp3",
+      "/elden-ring-sounds/option.mp3",
+      "/elden-ring-sounds/entering.mp3",
+      "/elden-ring-sounds/closetap.mp3",
+      "/elden-ring-sounds/tyspace.mp3",
+      "/elden-ring-sounds/tyback.mp3",
+      "/elden-ring-music/limgraveost.mp3",
+      "/elden-ring-music/roundtableost.mp3",
+      "/elden-ring-wallpaper/ranni.webm",
+      "/elden-ring-wallpaper/godfrey.webm",
+    ];
+
+    let cancelled = false;
+    let index = 0;
+
+    const cacheNext = async () => {
+      if (cancelled || index >= assetsToCache.length) return;
+      const asset = assetsToCache[index++];
+      const url = getMediaUrl(asset);
+      try {
+        if ('caches' in window) {
+          const cache = await caches.open('elden-ring-media-v1');
+          const existing = await cache.match(url);
+          if (!existing) {
+            await cache.add(url);
+          }
+        }
+      } catch (e) {
+        // Silent catch for low-priority background caching
+      }
+      if (!cancelled) {
+        setTimeout(cacheNext, 3000); // 3-second delay between assets to avoid UI thread lag
+      }
+    };
+
+    const timer = setTimeout(cacheNext, 2500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isEldenRing]);
+
   // Background Music Controller
   useEffect(() => {
     if (!isEldenRing || !bgMusicEnabled) {
@@ -166,9 +220,9 @@ export function EldenRingProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const playSoundEffect = (path: string, volume = 0.4) => {
+  const playSoundEffect = (relPath: string, volume = 0.4) => {
     try {
-      const sound = new Audio(path);
+      const sound = new Audio(getMediaUrl(relPath));
       sound.volume = volume;
       sound.play().catch(() => {});
     } catch (e) {
@@ -229,12 +283,12 @@ export function EldenRingProvider({ children }: { children: ReactNode }) {
 function EldenRingBackgroundOverlay({ isDark }: { isDark: boolean }) {
   // Night mode (Dark) uses Ranni theme & wallpaper
   // Day mode (Light) uses Godfrey theme & wallpaper
-  const videoSrc = isDark
-    ? "/elden-ring-wallpaper/ranni.webm"
-    : "/elden-ring-wallpaper/godfrey.webm";
-  const posterSrc = isDark
-    ? "/elden-ring-wallpaper/ranni2.jpg"
-    : "/elden-ring-wallpaper/godfrey2.jpg";
+  const videoSrc = getMediaUrl(
+    isDark ? "/elden-ring-wallpaper/ranni.webm" : "/elden-ring-wallpaper/godfrey.webm"
+  );
+  const posterSrc = getMediaUrl(
+    isDark ? "/elden-ring-wallpaper/ranni2.jpg" : "/elden-ring-wallpaper/godfrey2.jpg"
+  );
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden opacity-35 transition-all duration-1000">
