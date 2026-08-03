@@ -2,6 +2,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { LogOut, Sparkles, BookOpen, Trophy, GraduationCap, ShieldAlert, History, Menu, X, User, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { EldenRingToggle } from "@/components/elden-ring-toggle";
 import { AvatarBadge } from "@/components/avatar-badge";
 import { ProfileModal } from "@/components/profile-modal";
 import { PWAInstallModal } from "@/components/pwa-install-modal";
@@ -93,6 +94,7 @@ export function AppHeader() {
               <Download className="h-4 w-4" />
             </Button>
             <ThemeToggle />
+            <EldenRingToggle />
             {user && (
               <>
                 {/* Avatar badge button -> opens profile modal */}

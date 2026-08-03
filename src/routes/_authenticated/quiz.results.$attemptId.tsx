@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, Flag, Home, RotateCcw, X, AlertTriangle, TrendingDown, BookOpen, Trophy, Target } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAttemptResult, startWeakAreaAttempt } from "@/lib/quiz.functions";
 import { getCleanExplanation } from "@/lib/explanation.utils";
+import { EldenRingBanner, type EldenRingBannerType } from "@/components/elden-ring-banner";
+import { useEldenRing } from "@/hooks/use-elden-ring";
 import confetti from "canvas-confetti";
 
 export const Route = createFileRoute("/_authenticated/quiz/results/$attemptId")({
@@ -26,11 +28,13 @@ export const Route = createFileRoute("/_authenticated/quiz/results/$attemptId")(
 function Results() {
   const { attemptId } = useParams({ from: "/_authenticated/quiz/results/$attemptId" });
   const navigate = useNavigate();
+  const { isEldenRing } = useEldenRing();
   const fn = useServerFn(getAttemptResult);
   const startWeakFn = useServerFn(startWeakAreaAttempt);
 
   const q = useQuery({ queryKey: ["result", attemptId], queryFn: () => fn({ data: { attemptId } }) });
   const confettiFired = useRef(false);
+  const [bannerType, setBannerType] = useState<EldenRingBannerType>(null);
 
   const startWeakMutation = useMutation({
     mutationFn: () => startWeakFn(),
@@ -48,8 +52,19 @@ function Results() {
       const percent = q.data.attempt.max_score
         ? Math.round((Number(q.data.attempt.score) / Number(q.data.attempt.max_score)) * 100)
         : 0;
+
+      confettiFired.current = true;
+
+      // Elden Ring victory/defeat banner trigger (60% Accenture passing threshold)
+      if (percent >= 90 || (percent >= 80 && q.data.attempt.is_simulate)) {
+        setBannerType("GOD_SLAIN");
+      } else if (percent >= 60) {
+        setBannerType("DEMIGOD_FELLED");
+      } else {
+        setBannerType("YOU_DIED");
+      }
+
       if (percent >= 80) {
-        confettiFired.current = true;
         // Multi-burst confetti
         const fire = (particleRatio: number, opts: any) => {
           confetti({
@@ -123,6 +138,18 @@ function Results() {
               )}
             </div>
             <div className="flex flex-wrap gap-2">
+              {isEldenRing && (
+                <Button
+                  onClick={() => {
+                    const calculated = percent >= 90 || (percent >= 80 && attempt.is_simulate) ? "GOD_SLAIN" : percent >= 60 ? "DEMIGOD_FELLED" : "YOU_DIED";
+                    setBannerType(calculated);
+                  }}
+                  variant="outline"
+                  className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10 font-display text-xs"
+                >
+                  👑 Replay Elden Fate
+                </Button>
+              )}
               <Button onClick={() => startWeakMutation.mutate()} disabled={startWeakMutation.isPending} variant="secondary" className="gap-2 bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border border-amber-500/40">
                 <Target className="h-4 w-4" /> {startWeakMutation.isPending ? "Generating..." : "Retest Weak Areas"}
               </Button>
@@ -222,6 +249,9 @@ function Results() {
           })}
         </section>
       </main>
+
+      {/* Elden Ring Victory / Defeat Banner Overlay */}
+      <EldenRingBanner type={bannerType} onClose={() => setBannerType(null)} />
     </div>
   );
 }
