@@ -755,12 +755,31 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
     const selectedQuestions: any[] = [];
     const allSubtopicIds: string[] = [];
 
-    // Helper: calculate likelihood score for prioritization
+    // Fetch user's recent attempts to calculate question freshness & rotation
+    const { data: pastAttempts } = await context.supabase
+      .from("quiz_attempts")
+      .select("question_ids, answers")
+      .eq("user_id", context.userId)
+      .order("started_at", { ascending: false })
+      .limit(5);
+
+    const recentlySeenIds = new Set<string>();
+    const pastWrongIds = new Set<string>();
+
+    if (pastAttempts) {
+      for (const pa of pastAttempts) {
+        if (Array.isArray(pa.question_ids)) {
+          pa.question_ids.forEach((qid: string) => recentlySeenIds.add(qid));
+        }
+      }
+    }
+
+    // Helper: calculate likelihood score + User History Rotation Boost
     const calcLikelihoodScore = (q: any) => {
       let score = 0;
       const text = q.question_text || "";
 
-      // +3 for scenario / practical questions
+      // 1. Scenario / Practical weight (+3 pts)
       if (
         text.toLowerCase().includes("as an") ||
         text.toLowerCase().includes("as a") ||
@@ -771,12 +790,12 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
         score += 3;
       }
 
-      // +2 for MSQ questions
+      // 2. MSQ Complexity (+2 pts)
       if ((q.correct_option_count ?? 1) > 1 || q.type === "msq" || q.question_type === "MSQ") {
         score += 2;
       }
 
-      // +2 for core technical topics
+      // 3. Core Technical Topics (+2 pts)
       if (
         text.toLowerCase().includes("hnsw") ||
         text.toLowerCase().includes("vector") ||
@@ -788,6 +807,15 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
         text.toLowerCase().includes("agent")
       ) {
         score += 2;
+      }
+
+      // 4. USER HISTORY ROTATION & FRESHNESS BOOST
+      // Fresh/unseen questions get +4.0 points so ALL 269 questions rotate through!
+      if (!recentlySeenIds.has(q.id)) {
+        score += 4.0;
+      } else {
+        // Recently seen questions get a slight repeat penalty (-2.5 pts) so new questions take priority
+        score -= 2.5;
       }
 
       return score;
@@ -818,7 +846,7 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       // Score and sort by likelihood score, with random jitter for variety
       const scored = qs.map((qItem) => ({
         ...qItem,
-        likelihoodScore: calcLikelihoodScore(qItem) + Math.random() * 1.5,
+        likelihoodScore: calcLikelihoodScore(qItem) + Math.random() * 2.0,
       }));
 
       scored.sort((a, b) => b.likelihoodScore - a.likelihoodScore);
