@@ -723,7 +723,7 @@ export const startWeakAreaAttempt = createServerFn({ method: "POST" })
 export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // 1. Fetch all available courses
+    // 1. Fetch all available courses & subtopics
     const { data: allCourses } = await context.supabase
       .from("courses")
       .select("id, name");
@@ -732,28 +732,36 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       throw new Error("No courses found in database. Please run seed script first.");
     }
 
-    const courseMap = new Map(allCourses.map((c) => [c.name.toLowerCase().trim(), c.id]));
+    const { data: allSubtopics } = await context.supabase
+      .from("subtopics")
+      .select("id, course_id, name");
 
-    // Match course IDs by flexible substring
-    const findCourseId = (target: string) => {
-      const targetLower = target.toLowerCase().trim();
-      if (courseMap.has(targetLower)) return courseMap.get(targetLower);
-      for (const [cName, cId] of courseMap.entries()) {
-        if (cName.includes(targetLower) || targetLower.includes(cName)) return cId;
-      }
-      return null;
+    if (!allSubtopics || allSubtopics.length === 0) {
+      throw new Error("No subtopics found in database.");
+    }
+
+    // Filter MCQ2 target courses (EXCLUDING MCQ1)
+    const mcq2Courses = allCourses.filter((c) => !c.name.toUpperCase().includes("MCQ1"));
+    const targetCourses = mcq2Courses.length > 0 ? mcq2Courses : allCourses;
+    const targetCourseIds = new Set(targetCourses.map((c) => c.id));
+
+    // Match MCQ2 course IDs by key term
+    const findCourseId = (keyTerm: string) => {
+      const termLower = keyTerm.toLowerCase();
+      return targetCourses.find((c) => c.name.toLowerCase().includes(termLower))?.id || null;
     };
 
     // 2. Target allocation blueprint per course (50 Qs Total)
-    const blueprint: { courseName: string; targetCount: number }[] = [
-      { courseName: "Oracle APEX Developer Professional", targetCount: 15 },
-      { courseName: "XML", targetCount: 12 },
-      { courseName: "Oracle AI Vector Search", targetCount: 10 },
-      { courseName: "OCI Data Science Professional", targetCount: 7 },
-      { courseName: "Oracle AI Agent Studio", targetCount: 6 },
+    const blueprint: { keyTerm: string; targetCount: number }[] = [
+      { keyTerm: "apex", targetCount: 15 },
+      { keyTerm: "xml", targetCount: 12 },
+      { keyTerm: "vector", targetCount: 10 },
+      { keyTerm: "data science", targetCount: 7 },
+      { keyTerm: "agent", targetCount: 6 },
     ];
 
     const selectedQuestions: any[] = [];
+    const selectedQuestionIds = new Set<string>();
     const allSubtopicIds: string[] = [];
 
     // Fetch user's recent attempts to calculate question freshness & rotation
@@ -814,18 +822,14 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       return score;
     };
 
+    // Attempt to pick from 5-chapter blueprint first
     for (const b of blueprint) {
-      const cId = findCourseId(b.courseName);
+      const cId = findCourseId(b.keyTerm);
       if (!cId) continue;
 
-      const { data: subtopics } = await context.supabase
-        .from("subtopics")
-        .select("id")
-        .eq("course_id", cId);
-
-      if (!subtopics || subtopics.length === 0) continue;
-      const sIds = subtopics.map((s) => s.id);
-      allSubtopicIds.push(...sIds);
+      const subtopicsForCourse = allSubtopics.filter((s) => s.course_id === cId);
+      if (subtopicsForCourse.length === 0) continue;
+      const sIds = subtopicsForCourse.map((s) => s.id);
 
       const { data: qs } = await context.supabase
         .from("questions")
@@ -841,33 +845,52 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
 
       scored.sort((a, b) => b.likelihoodScore - a.likelihoodScore);
       const picked = scored.slice(0, b.targetCount);
-      selectedQuestions.push(...picked);
+      for (const p of picked) {
+        if (!selectedQuestionIds.has(p.id)) {
+          selectedQuestions.push(p);
+          selectedQuestionIds.add(p.id);
+          allSubtopicIds.push(p.subtopic_id);
+        }
+      }
     }
 
-    // Fallback: If target blueprint didn't yield enough questions, fill from any subtopics
+    // Fallback: Fill remaining quota from MCQ2 subtopics ONLY (strictly excluding MCQ1)
     if (selectedQuestions.length < 50) {
-      const existingIds = new Set(selectedQuestions.map((q) => q.id));
-      const { data: fallbackQs } = await context.supabase
-        .from("questions")
-        .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
-        .limit(100);
+      const targetSubIds = allSubtopics
+        .filter((s) => targetCourseIds.has(s.course_id))
+        .map((s) => s.id);
 
-      for (const fq of fallbackQs ?? []) {
-        if (selectedQuestions.length >= 50) break;
-        if (!existingIds.has(fq.id)) {
-          selectedQuestions.push(fq);
-          allSubtopicIds.push(fq.subtopic_id);
-          existingIds.add(fq.id);
+      if (targetSubIds.length > 0) {
+        const { data: targetQs } = await context.supabase
+          .from("questions")
+          .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
+          .in("subtopic_id", targetSubIds);
+
+        if (targetQs && targetQs.length > 0) {
+          const scoredAll = targetQs.map((qItem) => ({
+            ...qItem,
+            likelihoodScore: calcLikelihoodScore(qItem) + Math.random() * 2.0,
+          }));
+          scoredAll.sort((a, b) => b.likelihoodScore - a.likelihoodScore);
+
+          for (const fq of scoredAll) {
+            if (selectedQuestions.length >= 50) break;
+            if (!selectedQuestionIds.has(fq.id)) {
+              selectedQuestions.push(fq);
+              selectedQuestionIds.add(fq.id);
+              allSubtopicIds.push(fq.subtopic_id);
+            }
+          }
         }
       }
     }
 
     if (selectedQuestions.length === 0) {
-      throw new Error("No questions available for Smart Exam Engine.");
+      throw new Error("No questions available for MCQ2 Smart Exam Engine.");
     }
 
     const finalShuffled = [...selectedQuestions].sort(() => Math.random() - 0.5);
-    const primaryCourseId = allCourses[0]?.id;
+    const primaryCourseId = targetCourses[0]?.id;
 
     const { data: attempt, error: e2 } = await context.supabase
       .from("quiz_attempts")
