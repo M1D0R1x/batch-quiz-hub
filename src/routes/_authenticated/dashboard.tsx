@@ -117,11 +117,11 @@ function Dashboard() {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-foreground text-base">
                       Retest Mis-answered Questions 🔥
                     </h3>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30 shrink-0">
                       {Math.min(weakStats.data.wrongCount, 15)} of {weakStats.data.wrongCount} questions
                     </span>
                   </div>
@@ -134,7 +134,7 @@ function Dashboard() {
               <Button
                 onClick={() => startWeakMutation.mutate()}
                 disabled={startWeakMutation.isPending}
-                className="gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold shadow-md shadow-amber-500/20 transition-transform active:scale-95 shrink-0 h-10 px-4 text-xs"
+                className="gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-bold shadow-md shadow-amber-500/20 transition-transform active:scale-95 shrink-0 h-10 px-4 text-xs w-full sm:w-auto"
               >
                 <Zap className="w-4 h-4 fill-current" />
                 {startWeakMutation.isPending ? "Generating Drill..." : "Practice Weak Areas 🚀"}
@@ -157,41 +157,42 @@ function Dashboard() {
               {inProgress.data.map((attempt: any) => (
                 <div
                   key={attempt.id}
-                  className="card-elevated p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-card border-primary/30 flex items-center justify-between gap-4"
+                  className="card-elevated p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-card border-primary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 overflow-hidden"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shrink-0">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 w-full sm:w-auto">
+                    <div className="p-2.5 rounded-xl bg-primary text-primary-foreground shrink-0 mt-0.5 sm:mt-0">
                       {attempt.isSimulate ? <Timer className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground text-sm truncate">{attempt.courseName}</h3>
                         {attempt.isSimulate && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 uppercase">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 uppercase shrink-0">
                             Simulate
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {attempt.answeredCount}/{attempt.questionCount} answered
+                      <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5">
+                        <span>{attempt.answeredCount}/{attempt.questionCount} answered</span>
                         {attempt.draftSavedAt && (
-                          <> · saved {new Date(attempt.draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                          <span>· saved {new Date(attempt.draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40 w-full sm:w-auto">
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       title="Discard this paused quiz"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1 px-2"
                       disabled={discardMutation.isPending}
                       onClick={() => discardMutation.mutate(attempt.id)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
+                      <span className="sm:hidden">Discard</span>
                     </Button>
-                    <Button asChild size="sm" className="gap-1.5">
+                    <Button asChild size="sm" className="gap-1.5 flex-1 sm:flex-initial h-8 text-xs font-semibold">
                       <Link to="/quiz/run/$attemptId" params={{ attemptId: attempt.id }}>
                         Resume <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
