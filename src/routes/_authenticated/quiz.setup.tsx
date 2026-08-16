@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Target, Info, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Info, CheckCircle2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -147,6 +147,13 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
     } finally {
       setIsDiscarding(false);
     }
+  };
+
+  const canNext = () => {
+    if (step === 0) return !!courseId;
+    if (step === 1) return subtopicIds.length > 0;
+    if (step === 3 && simulate) return !!timeMin; // simulate requires a timer
+    return true;
   };
 
   const steps = ["Course", "Chapters", "Count", "Time", "Mix", "Difficulty", "Neg. Marking", "Review"];
@@ -745,7 +752,7 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
                 <Button
                   variant="outline"
                   className="sm:order-2 border-amber-500/30 text-amber-500 hover:bg-amber-500/15 gap-1.5"
-                  onClick={handleDiscardAndStart}
+                  onClick={handleConfirmDiscardAndStart}
                   disabled={start.isPending || isDiscarding}
                 >
                   {isDiscarding ? (
