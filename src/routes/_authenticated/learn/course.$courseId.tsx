@@ -89,7 +89,11 @@ function LearnCoursePage() {
     ? currentQ.correct_answers
     : JSON.parse(currentQ.correct_answers || '[]');
 
-  const isMSQ = currentQ.type === 'msq' || parsedCorrect.length > 1;
+  const isMSQ =
+    currentQ.type === 'msq' ||
+    (currentQ as any).question_type === 'msq' ||
+    ((currentQ as any).correct_option_count ?? 1) > 1 ||
+    parsedCorrect.length > 1;
 
   const handleSelectOption = (index: number) => {
     if (isSubmitted) return;
@@ -157,20 +161,27 @@ function LearnCoursePage() {
         </nav>
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-4">
-          <Button onClick={() => navigate({ to: '/learn' })} variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="w-4 h-4" /> Exit Full Course
-          </Button>
-          <div className="text-center">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold mb-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <Button onClick={() => navigate({ to: '/learn' })} variant="ghost" size="sm" className="gap-1.5 text-xs px-2 sm:px-3">
+              <ArrowLeft className="w-4 h-4" /> Exit Course
+            </Button>
+            <div className="sm:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
               <BookOpen className="w-3 h-3" /> Full Course Mode
             </div>
-            <h1 className="text-lg font-bold text-foreground truncate max-w-md">{course.name}</h1>
-            <p className="text-xs text-muted-foreground">
+          </div>
+
+          <div className="text-left sm:text-center flex-1 min-w-0 px-1">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold mb-1">
+              <BookOpen className="w-3 h-3" /> Full Course Mode
+            </div>
+            <h1 className="text-base sm:text-lg font-bold text-foreground leading-snug break-words">{course.name}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Card {currentIndex + 1} of {questions.length} • All Chapters Shuffled
             </p>
           </div>
-          <Button onClick={handleRestart} variant="outline" size="sm" className="gap-1.5 text-xs">
+
+          <Button onClick={handleRestart} variant="outline" size="sm" className="gap-1.5 text-xs shrink-0 self-end sm:self-center h-9 px-3">
             <RotateCcw className="w-3.5 h-3.5" /> Shuffle & Restart
           </Button>
         </div>

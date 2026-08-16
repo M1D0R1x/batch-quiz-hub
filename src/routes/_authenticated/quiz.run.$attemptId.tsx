@@ -223,31 +223,37 @@ function QuizRun() {
     return base;
   }
 
-  const isMsq = current.type === "msq";
+  const isMsq =
+    current.type === 'msq' ||
+    current.question_type === 'msq' ||
+    (current.correct_option_count ?? 1) > 1 ||
+    (Array.isArray(current.correct_answers) && current.correct_answers.length > 1);
 
   return (
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex-1">
-            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Question {idx + 1} of {questions.length}</span>
+        <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">Question {idx + 1} of {questions.length}</span>
               <span>{answered.size} answered · {flagged.size} flagged</span>
             </div>
             <Progress value={((idx + 1) / questions.length) * 100} className="h-1.5" />
           </div>
-          {timerText && (
-            <div className={`rounded-lg border px-3 py-2 font-mono text-sm tabular-nums ${
-              timerCritical ? "border-destructive/50 text-destructive animate-pulse bg-destructive/5" : "border-border text-foreground"
-            }`}>
-              {timerText}
-            </div>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+            {timerText && (
+              <div className={`rounded-lg border px-2.5 py-1.5 font-mono text-xs sm:text-sm tabular-nums ${
+                timerCritical ? "border-destructive/50 text-destructive animate-pulse bg-destructive/5" : "border-border text-foreground"
+              }`}>
+                {timerText}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
               try {
                 await saveFn({
                   data: {
@@ -316,24 +322,27 @@ function QuizRun() {
             </SheetContent>
           </Sheet>
         </div>
+      </div>
 
         <div className="card-elevated p-6 animate-fade-up">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div className="flex items-center gap-2 flex-wrap">
               {isMsq ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[11px] uppercase tracking-wide font-bold text-amber-500">
-                  <CheckSquare className="w-3 h-3" />
-                  Multiple answers
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs uppercase tracking-wide font-bold text-amber-500">
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Multiple answers (MSQ - Checkboxes)
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 px-2.5 py-0.5 text-[11px] uppercase tracking-wide font-bold text-sky-400">
-                  <Circle className="w-3 h-3" />
-                  Single answer
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-3 py-1 text-xs uppercase tracking-wide font-bold text-sky-400">
+                  <Circle className="w-3.5 h-3.5" />
+                  Single answer (MCQ - Radio Circles)
                 </span>
               )}
-              {isMsq && (
-                <span className="text-xs text-amber-500/80">Select all that apply</span>
-              )}
+              <span className="text-xs text-muted-foreground font-medium">
+                {isMsq
+                  ? `Select all ${current.correct_option_count || 2} correct options`
+                  : "Select 1 option"}
+              </span>
             </div>
             <Button
               variant={flagged.has(current.id) ? "default" : "outline"}
@@ -357,36 +366,43 @@ function QuizRun() {
 
           <h2 className="text-lg font-semibold leading-relaxed">{current.question_text}</h2>
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 space-y-2.5">
             {!isMsq ? (
               <RadioGroup
                 value={(answers[current.id]?.[0] ?? -1).toString()}
                 onValueChange={(v) => setAnswer(current.id, [Number(v)])}
-                className="space-y-2"
+                className="space-y-2.5"
               >
-                {current.options.map((opt: string, i: number) => (
-                  <Label
-                    key={i}
-                    htmlFor={`${current.id}-${i}`}
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 transition hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
-                  >
-                    <RadioGroupItem id={`${current.id}-${i}`} value={i.toString()} className="mt-0.5" />
-                    <span className="text-sm leading-relaxed">{opt}</span>
-                  </Label>
-                ))}
+                {current.options.map((opt: string, i: number) => {
+                  const isChecked = (answers[current.id]?.[0] ?? -1) === i;
+                  return (
+                    <Label
+                      key={i}
+                      htmlFor={`${current.id}-${i}`}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-all ${
+                        isChecked
+                          ? "border-sky-500/70 bg-sky-500/10 ring-1 ring-sky-500/40"
+                          : "border-border hover:border-sky-500/40 hover:bg-secondary/20"
+                      }`}
+                    >
+                      <RadioGroupItem id={`${current.id}-${i}`} value={i.toString()} className="mt-0.5 border-sky-400 text-sky-400" />
+                      <span className="text-sm leading-relaxed">{opt}</span>
+                    </Label>
+                  );
+                })}
               </RadioGroup>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {current.options.map((opt: string, i: number) => {
                   const picked = answers[current.id] ?? [];
                   const checked = picked.includes(i);
                   return (
                     <label
                       key={i}
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3.5 transition-all ${
                         checked
-                          ? "border-amber-500/60 bg-amber-500/8"
-                          : "border-border hover:border-amber-500/40"
+                          ? "border-amber-500/70 bg-amber-500/10 ring-1 ring-amber-500/40"
+                          : "border-border hover:border-amber-500/40 hover:bg-secondary/20"
                       }`}
                     >
                       <Checkbox
@@ -394,10 +410,10 @@ function QuizRun() {
                         onCheckedChange={() =>
                           setAnswer(
                             current.id,
-                            checked ? picked.filter((x) => x !== i) : [...picked, i].sort((a, b) => a - b),
+                            checked ? picked.filter((x: number) => x !== i) : [...picked, i].sort((a: number, b: number) => a - b),
                           )
                         }
-                        className="mt-0.5 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                        className="mt-0.5 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                       />
                       <span className="text-sm leading-relaxed">{opt}</span>
                     </label>

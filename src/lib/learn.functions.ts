@@ -56,7 +56,7 @@ export const getLearnSubtopicQuestions = createServerFn({ method: "GET" })
 
     const { data: questions, error: qErr } = await context.supabase
       .from("questions")
-      .select("id, subtopic_id, type, question_text, options, correct_answers, explanation, difficulty")
+      .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, correct_answers, explanation, difficulty")
       .eq("subtopic_id", data.subtopicId)
       .order("created_at");
 
@@ -94,7 +94,7 @@ export const getLearnCourseQuestions = createServerFn({ method: "GET" })
 
     const { data: questions, error: qErr } = await context.supabase
       .from("questions")
-      .select("id, subtopic_id, type, question_text, options, correct_answers, explanation, difficulty")
+      .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, correct_answers, explanation, difficulty")
       .in("subtopic_id", subtopicIds);
 
     if (qErr) throw new Error(qErr.message);

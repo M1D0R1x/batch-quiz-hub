@@ -6,7 +6,7 @@ export const getBulkQuestionsData = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: questions, error } = await context.supabase
       .from("questions")
-      .select("id, subtopic_id, type, question_text, options, explanation, difficulty, created_at");
+      .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, explanation, difficulty, created_at");
 
     if (error) throw new Error(error.message);
 

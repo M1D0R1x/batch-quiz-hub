@@ -197,13 +197,22 @@ function Results() {
             const userSet = new Set(d.user_answers);
             const fullyCorrect = d.gained >= 1;
             const zero = d.gained === 0;
-            const hasDeduction = (d.deduction ?? 0) > 0;
+            const isMsq = d.type === "msq" || (d.correct_answers && d.correct_answers.length > 1);
             return (
               <div key={d.id} className="card-elevated p-5 animate-fade-up">
-                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    Q{i + 1} · {d.subtopic_name} · {d.difficulty} · {d.type.toUpperCase()}
-                  </span>
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span>Q{i + 1} · {d.subtopic_name} · {d.difficulty}</span>
+                    {isMsq ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] uppercase font-bold text-amber-500">
+                        <CheckSquare className="w-2.5 h-2.5" /> MSQ
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[10px] uppercase font-bold text-sky-400">
+                        <Circle className="w-2.5 h-2.5" /> MCQ
+                      </span>
+                    )}
+                  </div>
                   <span className="flex items-center gap-2">
                     {d.flagged && <Flag className="h-3.5 w-3.5 fill-warning text-warning" />}
                     {hasDeduction && (

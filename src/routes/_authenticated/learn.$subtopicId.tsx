@@ -78,7 +78,11 @@ function LearnFlashcardPage() {
     return Array.isArray(currentQ.correct_answers) ? currentQ.correct_answers : JSON.parse(currentQ.correct_answers || '[]');
   }, [currentQ]);
 
-  const isMSQ = currentQ?.type === 'msq' || parsedCorrect.length > 1;
+  const isMSQ =
+    currentQ?.type === 'msq' ||
+    currentQ?.question_type === 'msq' ||
+    (currentQ?.correct_option_count ?? 1) > 1 ||
+    parsedCorrect.length > 1;
 
   // Keyboard navigation
   useEffect(() => {
@@ -212,16 +216,18 @@ function LearnFlashcardPage() {
         </nav>
 
         {/* Header Control Row */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-foreground truncate">{subtopic.name}</h1>
-            <p className="text-xs text-muted-foreground">
-              Card {currentIndex + 1} of {questions.length} • Use Arrow keys to navigate
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3 sm:border-0 sm:pb-0">
+          <div className="flex-1 min-w-0 space-y-1">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground leading-tight break-words">{subtopic.name}</h1>
+            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span>Card {currentIndex + 1} of {questions.length}</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">Use Arrow keys to navigate</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Button onClick={handleRestart} variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+          <div className="flex items-center gap-2 shrink-0 justify-end">
+            <Button onClick={handleRestart} variant="outline" size="sm" className="gap-1.5 text-xs h-9 px-3">
               <RotateCcw className="w-3.5 h-3.5" /> Restart Deck
             </Button>
 

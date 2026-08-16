@@ -138,7 +138,7 @@ export const startAttempt = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("questions")
-      .select("id, subtopic_id, type, question_text, options, difficulty")
+      .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
       .in("subtopic_id", data.subtopicIds);
     if (data.mix !== "both") q = q.eq("type", data.mix);
     if (data.difficulty !== "any") q = q.eq("difficulty", data.difficulty);
@@ -174,6 +174,9 @@ export const startAttempt = createServerFn({ method: "POST" })
         id: q.id,
         subtopic_id: q.subtopic_id,
         type: q.type as "mcq" | "msq",
+        question_type: q.question_type ?? (q.type as string),
+        correct_option_count: q.correct_option_count ?? 1,
+        total_options: q.total_options ?? (q.options as string[]).length,
         question_text: q.question_text,
         options: q.options as string[],
         difficulty: q.difficulty as "easy" | "medium" | "hard",
@@ -196,7 +199,7 @@ export const getActiveAttempt = createServerFn({ method: "GET" })
 
     const { data: qs, error: e2 } = await context.supabase
       .from("questions")
-      .select("id, subtopic_id, type, question_text, options, difficulty")
+      .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
       .in("id", attempt.question_ids);
     if (e2) throw new Error(e2.message);
 
@@ -209,6 +212,9 @@ export const getActiveAttempt = createServerFn({ method: "GET" })
         id: q.id,
         subtopic_id: q.subtopic_id,
         type: q.type as "mcq" | "msq",
+        question_type: q.question_type ?? (q.type as string),
+        correct_option_count: q.correct_option_count ?? 1,
+        total_options: q.total_options ?? (q.options as string[]).length,
         question_text: q.question_text,
         options: q.options as string[],
         difficulty: q.difficulty as "easy" | "medium" | "hard",

@@ -71,35 +71,44 @@ export type Database = {
       questions: {
         Row: {
           correct_answers: Json
+          correct_option_count: number
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           explanation: string | null
           id: string
           options: Json
           question_text: string
+          question_type: string
           subtopic_id: string
+          total_options: number
           type: Database["public"]["Enums"]["question_type"]
         }
         Insert: {
           correct_answers: Json
+          correct_option_count?: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           explanation?: string | null
           id?: string
           options: Json
           question_text: string
+          question_type?: string
           subtopic_id: string
-          type: Database["public"]["Enums"]["question_type"]
+          total_options?: number
+          type?: Database["public"]["Enums"]["question_type"]
         }
         Update: {
           correct_answers?: Json
+          correct_option_count?: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           explanation?: string | null
           id?: string
           options?: Json
           question_text?: string
+          question_type?: string
           subtopic_id?: string
+          total_options?: number
           type?: Database["public"]["Enums"]["question_type"]
         }
         Relationships: [

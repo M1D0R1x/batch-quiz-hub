@@ -5,6 +5,9 @@ export interface CachedQuestion {
   id: string;
   subtopic_id: string;
   type: 'mcq' | 'msq';
+  question_type?: string;
+  correct_option_count?: number;
+  total_options?: number;
   question_text: string;
   options: string[] | any;
   explanation?: string | null;
