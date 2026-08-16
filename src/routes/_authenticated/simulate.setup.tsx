@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { QuizSetupPage } from "./quiz.setup";
+import { QuizSetupPage, searchSchema } from "./quiz.setup";
 
 export const Route = createFileRoute("/_authenticated/simulate/setup")({
+  validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
       { title: "Simulate Test — QuizForge" },

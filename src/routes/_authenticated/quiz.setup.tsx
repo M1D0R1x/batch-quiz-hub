@@ -22,10 +22,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { listCourses, startAttempt, getInProgressAttempts, discardAttempt, startSmartExamEngineAttempt } from "@/lib/quiz.functions";
 
-const searchSchema = z.object({
-  courseId: z.string().uuid().optional(),
-  subtopicId: z.string().uuid().optional(),
-  simulate: z.boolean().optional(),
+export const searchSchema = z.object({
+  courseId: z.string().optional().catch(undefined),
+  subtopicId: z.string().optional().catch(undefined),
+  simulate: z.preprocess((val) => {
+    if (typeof val === "string") return val === "true";
+    return Boolean(val);
+  }, z.boolean().optional()).catch(false),
 });
 
 export const Route = createFileRoute("/_authenticated/quiz/setup")({
@@ -41,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/quiz/setup")({
 });
 
 export function QuizSetupPage({ simulate }: { simulate: boolean }) {
-  const search = useSearch({ strict: false }) as z.infer<typeof searchSchema>;
+  const search = (useSearch({ strict: false }) || {}) as Partial<z.infer<typeof searchSchema>>;
   const nav = useNavigate();
   const queryClient = useQueryClient();
   const listFn = useServerFn(listCourses);
@@ -68,8 +71,8 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
   });
 
   const [step, setStep] = useState(0);
-  const [courseId, setCourseId] = useState<string | null>(search.courseId ?? null);
-  const [subtopicIds, setSubtopicIds] = useState<string[]>(search.subtopicId ? [search.subtopicId] : []);
+  const [courseId, setCourseId] = useState<string | null>(search?.courseId ?? null);
+  const [subtopicIds, setSubtopicIds] = useState<string[]>(search?.subtopicId ? [search.subtopicId] : []);
   const [count, setCount] = useState(20);
   const [timeMin, setTimeMin] = useState<number | null>(simulate ? 30 : 20);
   const [mix, setMix] = useState<"mcq" | "msq" | "both">("both");
