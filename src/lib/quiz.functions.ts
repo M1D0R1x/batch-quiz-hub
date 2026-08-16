@@ -719,3 +719,144 @@ export const startWeakAreaAttempt = createServerFn({ method: "POST" })
 
     return { attemptId: attempt.id, count: selected.length };
   });
+
+export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // 1. Fetch 5 target courses by name
+    const targetCourseNames = [
+      "Oracle APEX Developer Professional",
+      "XML",
+      "Oracle AI Vector Search",
+      "OCI Data Science Professional",
+      "Oracle AI Agent Studio for Fusion Applications Developers",
+    ];
+
+    const { data: targetCourses } = await context.supabase
+      .from("courses")
+      .select("id, name")
+      .in("name", targetCourseNames);
+
+    if (!targetCourses || targetCourses.length === 0) {
+      throw new Error("Target courses not found in database. Please run seed script first.");
+    }
+
+    const courseMap = new Map(targetCourses.map((c) => [c.name, c.id]));
+
+    // 2. Target allocation blueprint per course (50 Qs Total)
+    const blueprint: { courseName: string; targetCount: number }[] = [
+      { courseName: "Oracle APEX Developer Professional", targetCount: 15 },
+      { courseName: "XML", targetCount: 12 },
+      { courseName: "Oracle AI Vector Search", targetCount: 10 },
+      { courseName: "OCI Data Science Professional", targetCount: 7 },
+      { courseName: "Oracle AI Agent Studio for Fusion Applications Developers", targetCount: 6 },
+    ];
+
+    const selectedQuestions: any[] = [];
+    const allSubtopicIds: string[] = [];
+
+    // Helper: calculate likelihood score for prioritization
+    const calcLikelihoodScore = (q: any) => {
+      let score = 0;
+      const text = q.question_text || "";
+
+      // +3 for scenario / practical questions
+      if (
+        text.toLowerCase().includes("as an") ||
+        text.toLowerCase().includes("as a") ||
+        text.toLowerCase().includes("you are") ||
+        text.toLowerCase().includes("scenario") ||
+        text.toLowerCase().includes("which of the following options")
+      ) {
+        score += 3;
+      }
+
+      // +2 for MSQ questions
+      if ((q.correct_option_count ?? 1) > 1 || q.type === "msq" || q.question_type === "MSQ") {
+        score += 2;
+      }
+
+      // +2 for core technical topics
+      if (
+        text.toLowerCase().includes("hnsw") ||
+        text.toLowerCase().includes("vector") ||
+        text.toLowerCase().includes("xpath") ||
+        text.toLowerCase().includes("xslt") ||
+        text.toLowerCase().includes("rest data") ||
+        text.toLowerCase().includes("dynamic action") ||
+        text.toLowerCase().includes("mlops") ||
+        text.toLowerCase().includes("agent")
+      ) {
+        score += 2;
+      }
+
+      return score;
+    };
+
+    for (const b of blueprint) {
+      const cId = courseMap.get(b.courseName);
+      if (!cId) continue;
+
+      // Get subtopics for course
+      const { data: subtopics } = await context.supabase
+        .from("subtopics")
+        .select("id")
+        .eq("course_id", cId);
+
+      if (!subtopics || subtopics.length === 0) continue;
+      const sIds = subtopics.map((s) => s.id);
+      allSubtopicIds.push(...sIds);
+
+      // Get questions for this course
+      const { data: qs } = await context.supabase
+        .from("questions")
+        .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
+        .in("subtopic_id", sIds);
+
+      if (!qs || qs.length === 0) continue;
+
+      // Score and sort by likelihood score, with random jitter for variety
+      const scored = qs.map((qItem) => ({
+        ...qItem,
+        likelihoodScore: calcLikelihoodScore(qItem) + Math.random() * 1.5,
+      }));
+
+      scored.sort((a, b) => b.likelihoodScore - a.likelihoodScore);
+
+      // Pick top targetCount questions
+      const picked = scored.slice(0, b.targetCount);
+      selectedQuestions.push(...picked);
+    }
+
+    if (selectedQuestions.length === 0) {
+      throw new Error("No questions available for Smart Exam Engine.");
+    }
+
+    // Final shuffle so questions are mixed across chapters
+    const finalShuffled = [...selectedQuestions].sort(() => Math.random() - 0.5);
+    const primaryCourseId = targetCourses[0]?.id;
+
+    // 3. Create attempt
+    const { data: attempt, error: e2 } = await context.supabase
+      .from("quiz_attempts")
+      .insert({
+        user_id: context.userId,
+        course_id: primaryCourseId,
+        subtopic_ids: allSubtopicIds,
+        question_ids: finalShuffled.map((q) => q.id),
+        question_count: finalShuffled.length,
+        time_limit_seconds: 3600, // 60 minutes for 50 Qs exam
+        is_simulate: true,
+        negative_marking: 0,
+        answers: {},
+      })
+      .select("id, started_at, time_limit_seconds, is_simulate, negative_marking")
+      .single();
+
+    if (e2) throw new Error(e2.message);
+
+    return {
+      attemptId: attempt.id,
+      count: finalShuffled.length,
+    };
+  });

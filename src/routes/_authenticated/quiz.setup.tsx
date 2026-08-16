@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Target } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { listCourses, startAttempt, getInProgressAttempts, discardAttempt } from "@/lib/quiz.functions";
+import { listCourses, startAttempt, getInProgressAttempts, discardAttempt, startSmartExamEngineAttempt } from "@/lib/quiz.functions";
 
 const searchSchema = z.object({
   courseId: z.string().uuid().optional(),
@@ -48,6 +48,16 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
   const startFn = useServerFn(startAttempt);
   const inProgressFn = useServerFn(getInProgressAttempts);
   const discardFn = useServerFn(discardAttempt);
+  const smartEngineFn = useServerFn(startSmartExamEngineAttempt);
+
+  const smartEngineMutation = useMutation({
+    mutationFn: () => smartEngineFn(),
+    onSuccess: (res) => {
+      toast.success("Smart Exam Engine initialized! Starting 50-question mock exam.");
+      nav({ to: "/quiz/run/$attemptId", params: { attemptId: res.attemptId } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to launch Smart Exam Engine"),
+  });
 
   const courses = useQuery({ queryKey: ["courses"], queryFn: () => listFn() });
   const inProgress = useQuery({
@@ -106,8 +116,11 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
           negativePenalty,
         },
       }),
-    onSuccess: (res) => nav({ to: "/quiz/run/$attemptId", params: { attemptId: res.attempt.id } }),
-    onError: (e: any) => toast.error(e.message ?? "Failed to start"),
+    onSuccess: (res) => {
+      toast.success("Quiz created!");
+      nav({ to: "/quiz/run/$attemptId", params: { attemptId: res.attempt.id } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to start quiz"),
   });
 
   const handleStartClick = () => {
@@ -118,13 +131,11 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
     }
   };
 
-  const handleDiscardAndStart = async () => {
+  const handleConfirmDiscardAndStart = async () => {
+    if (!existingAttempt) return;
     setIsDiscarding(true);
     try {
-      if (existingAttempt) {
-        await discardFn({ data: { attemptId: existingAttempt.id } });
-        await queryClient.invalidateQueries({ queryKey: ['in-progress-attempts'] });
-      }
+      await discardFn({ data: { attemptId: existingAttempt.id } });
       setShowConfirmDialog(false);
       start.mutate();
     } catch (e: any) {
@@ -135,17 +146,69 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
   };
 
   const steps = ["Course", "Chapters", "Count", "Time", "Mix", "Difficulty", "Neg. Marking", "Review"];
-  const canNext = () => {
-    if (step === 0) return !!courseId;
-    if (step === 1) return subtopicIds.length > 0;
-    if (step === 2) return count > 0;
-    return true;
-  };
 
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        {/* 🔥 Smart Exam Engine Banner */}
+        <div className="mb-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-5 sm:p-6 shadow-xl relative animate-fade-up">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" />
+                High-Likelihood Certification Simulator
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                🔥 Smart Exam Engine (50 High-Likelihood Qs)
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Algorithmically samples 50 high-priority questions strictly focused across your 5 core chapters, weighted by scenario complexity, MSQ difficulty, and exam blueprint frequencies.
+              </p>
+
+              {/* Blueprint Domain Pills */}
+              <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" /> APEX: 15 Qs
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" /> XML: 12 Qs
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> Vector Search: 10 Qs
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-400" /> Data Science: 7 Qs
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400" /> AI Agent Studio: 6 Qs
+                </span>
+              </div>
+            </div>
+
+            <div className="shrink-0 pt-2 md:pt-0">
+              <Button
+                size="lg"
+                disabled={smartEngineMutation.isPending}
+                onClick={() => smartEngineMutation.mutate()}
+                className="w-full sm:w-auto h-12 px-6 gap-2 text-sm font-bold shadow-lg bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:opacity-95 text-primary-foreground"
+              >
+                {smartEngineMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Assembling 50 Qs...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 fill-primary-foreground" />
+                    Launch Smart Exam (50 Qs)
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {existingAttempt && (
           <div className="mb-6 rounded-2xl border border-amber-500/30 bg-card p-4 sm:p-5 shadow-sm animate-fade-up">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
