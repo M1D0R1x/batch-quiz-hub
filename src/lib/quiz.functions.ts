@@ -264,7 +264,7 @@ export const saveQuizProgress = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
-export const getInProgressAttempts = createServerFn({ method: 'POST' })
+export const getInProgressAttempts = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: attempts, error } = await context.supabase
@@ -723,25 +723,26 @@ export const startWeakAreaAttempt = createServerFn({ method: "POST" })
 export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // 1. Fetch 5 target courses by name
-    const targetCourseNames = [
-      "Oracle APEX Developer Professional",
-      "XML",
-      "Oracle AI Vector Search",
-      "OCI Data Science Professional",
-      "Oracle AI Agent Studio for Fusion Applications Developers",
-    ];
-
-    const { data: targetCourses } = await context.supabase
+    // 1. Fetch all available courses
+    const { data: allCourses } = await context.supabase
       .from("courses")
-      .select("id, name")
-      .in("name", targetCourseNames);
+      .select("id, name");
 
-    if (!targetCourses || targetCourses.length === 0) {
-      throw new Error("Target courses not found in database. Please run seed script first.");
+    if (!allCourses || allCourses.length === 0) {
+      throw new Error("No courses found in database. Please run seed script first.");
     }
 
-    const courseMap = new Map(targetCourses.map((c) => [c.name, c.id]));
+    const courseMap = new Map(allCourses.map((c) => [c.name.toLowerCase().trim(), c.id]));
+
+    // Match course IDs by flexible substring
+    const findCourseId = (target: string) => {
+      const targetLower = target.toLowerCase().trim();
+      if (courseMap.has(targetLower)) return courseMap.get(targetLower);
+      for (const [cName, cId] of courseMap.entries()) {
+        if (cName.includes(targetLower) || targetLower.includes(cName)) return cId;
+      }
+      return null;
+    };
 
     // 2. Target allocation blueprint per course (50 Qs Total)
     const blueprint: { courseName: string; targetCount: number }[] = [
@@ -749,7 +750,7 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       { courseName: "XML", targetCount: 12 },
       { courseName: "Oracle AI Vector Search", targetCount: 10 },
       { courseName: "OCI Data Science Professional", targetCount: 7 },
-      { courseName: "Oracle AI Agent Studio for Fusion Applications Developers", targetCount: 6 },
+      { courseName: "Oracle AI Agent Studio", targetCount: 6 },
     ];
 
     const selectedQuestions: any[] = [];
@@ -764,8 +765,6 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       .limit(5);
 
     const recentlySeenIds = new Set<string>();
-    const pastWrongIds = new Set<string>();
-
     if (pastAttempts) {
       for (const pa of pastAttempts) {
         if (Array.isArray(pa.question_ids)) {
@@ -779,7 +778,6 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       let score = 0;
       const text = q.question_text || "";
 
-      // 1. Scenario / Practical weight (+3 pts)
       if (
         text.toLowerCase().includes("as an") ||
         text.toLowerCase().includes("as a") ||
@@ -790,12 +788,10 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
         score += 3;
       }
 
-      // 2. MSQ Complexity (+2 pts)
       if ((q.correct_option_count ?? 1) > 1 || q.type === "msq" || q.question_type === "MSQ") {
         score += 2;
       }
 
-      // 3. Core Technical Topics (+2 pts)
       if (
         text.toLowerCase().includes("hnsw") ||
         text.toLowerCase().includes("vector") ||
@@ -809,12 +805,9 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
         score += 2;
       }
 
-      // 4. USER HISTORY ROTATION & FRESHNESS BOOST
-      // Fresh/unseen questions get +4.0 points so ALL 269 questions rotate through!
       if (!recentlySeenIds.has(q.id)) {
         score += 4.0;
       } else {
-        // Recently seen questions get a slight repeat penalty (-2.5 pts) so new questions take priority
         score -= 2.5;
       }
 
@@ -822,10 +815,9 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
     };
 
     for (const b of blueprint) {
-      const cId = courseMap.get(b.courseName);
+      const cId = findCourseId(b.courseName);
       if (!cId) continue;
 
-      // Get subtopics for course
       const { data: subtopics } = await context.supabase
         .from("subtopics")
         .select("id")
@@ -835,7 +827,6 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
       const sIds = subtopics.map((s) => s.id);
       allSubtopicIds.push(...sIds);
 
-      // Get questions for this course
       const { data: qs } = await context.supabase
         .from("questions")
         .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
@@ -843,37 +834,50 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
 
       if (!qs || qs.length === 0) continue;
 
-      // Score and sort by likelihood score, with random jitter for variety
       const scored = qs.map((qItem) => ({
         ...qItem,
         likelihoodScore: calcLikelihoodScore(qItem) + Math.random() * 2.0,
       }));
 
       scored.sort((a, b) => b.likelihoodScore - a.likelihoodScore);
-
-      // Pick top targetCount questions
       const picked = scored.slice(0, b.targetCount);
       selectedQuestions.push(...picked);
+    }
+
+    // Fallback: If target blueprint didn't yield enough questions, fill from any subtopics
+    if (selectedQuestions.length < 50) {
+      const existingIds = new Set(selectedQuestions.map((q) => q.id));
+      const { data: fallbackQs } = await context.supabase
+        .from("questions")
+        .select("id, subtopic_id, type, question_type, correct_option_count, total_options, question_text, options, difficulty")
+        .limit(100);
+
+      for (const fq of fallbackQs ?? []) {
+        if (selectedQuestions.length >= 50) break;
+        if (!existingIds.has(fq.id)) {
+          selectedQuestions.push(fq);
+          allSubtopicIds.push(fq.subtopic_id);
+          existingIds.add(fq.id);
+        }
+      }
     }
 
     if (selectedQuestions.length === 0) {
       throw new Error("No questions available for Smart Exam Engine.");
     }
 
-    // Final shuffle so questions are mixed across chapters
     const finalShuffled = [...selectedQuestions].sort(() => Math.random() - 0.5);
-    const primaryCourseId = targetCourses[0]?.id;
+    const primaryCourseId = allCourses[0]?.id;
 
-    // 3. Create attempt
     const { data: attempt, error: e2 } = await context.supabase
       .from("quiz_attempts")
       .insert({
         user_id: context.userId,
         course_id: primaryCourseId,
-        subtopic_ids: allSubtopicIds,
+        subtopic_ids: Array.from(new Set(allSubtopicIds)),
         question_ids: finalShuffled.map((q) => q.id),
         question_count: finalShuffled.length,
-        time_limit_seconds: 3600, // 60 minutes for 50 Qs exam
+        time_limit_seconds: 3600,
         is_simulate: true,
         negative_marking: 0,
         answers: {},
