@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Flag, Menu, Pause, CheckSquare, Circle } from "lucide-react";
+import { getShuffledOptions } from "@/lib/utils";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -229,6 +230,11 @@ function QuizRun() {
     (current.correct_option_count ?? 1) > 1 ||
     (Array.isArray(current.correct_answers) && current.correct_answers.length > 1);
 
+  const { shuffledOptions, mapShuffledToOriginal, mapOriginalToShuffled } = useMemo(() => {
+    if (!current?.id || !current?.options) return { shuffledOptions: [], mapShuffledToOriginal: [], mapOriginalToShuffled: [] };
+    return getShuffledOptions(current.id, current.options, attemptId);
+  }, [current?.id, current?.options, attemptId]);
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -369,12 +375,21 @@ function QuizRun() {
           <div className="mt-6 space-y-2.5">
             {!isMsq ? (
               <RadioGroup
-                value={(answers[current.id]?.[0] ?? -1).toString()}
-                onValueChange={(v) => setAnswer(current.id, [Number(v)])}
+                value={
+                  answers[current.id]?.[0] !== undefined
+                    ? mapOriginalToShuffled[answers[current.id][0]]?.toString() ?? "-1"
+                    : "-1"
+                }
+                onValueChange={(v) => {
+                  const shuffledIdx = Number(v);
+                  const origIdx = mapShuffledToOriginal[shuffledIdx];
+                  if (origIdx !== undefined) setAnswer(current.id, [origIdx]);
+                }}
                 className="space-y-2.5"
               >
-                {current.options.map((opt: string, i: number) => {
-                  const isChecked = (answers[current.id]?.[0] ?? -1) === i;
+                {shuffledOptions.map((opt: string, i: number) => {
+                  const origIdx = mapShuffledToOriginal[i];
+                  const isChecked = (answers[current.id]?.[0] ?? -1) === origIdx;
                   return (
                     <Label
                       key={i}
@@ -393,9 +408,10 @@ function QuizRun() {
               </RadioGroup>
             ) : (
               <div className="space-y-2.5">
-                {current.options.map((opt: string, i: number) => {
+                {shuffledOptions.map((opt: string, i: number) => {
+                  const origIdx = mapShuffledToOriginal[i];
                   const picked = answers[current.id] ?? [];
-                  const checked = picked.includes(i);
+                  const checked = picked.includes(origIdx);
                   return (
                     <label
                       key={i}
@@ -407,12 +423,13 @@ function QuizRun() {
                     >
                       <Checkbox
                         checked={checked}
-                        onCheckedChange={() =>
-                          setAnswer(
-                            current.id,
-                            checked ? picked.filter((x: number) => x !== i) : [...picked, i].sort((a: number, b: number) => a - b),
-                          )
-                        }
+                        onCheckedChange={() => {
+                          if (origIdx === undefined) return;
+                          const next = checked
+                            ? picked.filter((x: number) => x !== origIdx)
+                            : [...picked, origIdx].sort((a: number, b: number) => a - b);
+                          setAnswer(current.id, next);
+                        }}
                         className="mt-0.5 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                       />
                       <span className="text-sm leading-relaxed">{opt}</span>

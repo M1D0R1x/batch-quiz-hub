@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getLearnSubtopicQuestions } from '@/lib/learn.functions';
 import { getCleanExplanation } from '@/lib/explanation.utils';
+import { getShuffledOptions } from '@/lib/utils';
 import { AppHeader } from '@/components/app-header';
 import {
   ArrowLeft,
@@ -78,11 +79,18 @@ function LearnFlashcardPage() {
     return Array.isArray(currentQ.correct_answers) ? currentQ.correct_answers : JSON.parse(currentQ.correct_answers || '[]');
   }, [currentQ]);
 
+  const { shuffledOptions, shuffledCorrect } = useMemo(() => {
+    if (!currentQ || parsedOptions.length === 0) return { shuffledOptions: [], shuffledCorrect: [] };
+    const { shuffledOptions, mapOriginalToShuffled } = getShuffledOptions(currentQ.id, parsedOptions, `${shuffleSeed}`);
+    const shuffledCorrect = parsedCorrect.map((origIdx) => mapOriginalToShuffled[origIdx]).filter((idx) => idx !== undefined);
+    return { shuffledOptions, shuffledCorrect };
+  }, [currentQ, parsedOptions, parsedCorrect, shuffleSeed]);
+
   const isMSQ =
     currentQ?.type === 'msq' ||
     currentQ?.question_type === 'msq' ||
     (currentQ?.correct_option_count ?? 1) > 1 ||
-    parsedCorrect.length > 1;
+    shuffledCorrect.length > 1;
 
   // Keyboard navigation
   useEffect(() => {
@@ -142,8 +150,8 @@ function LearnFlashcardPage() {
     if (selectedIndices.length === 0) return;
     setIsSubmitted(true);
     const isCorrect =
-      selectedIndices.length === parsedCorrect.length &&
-      selectedIndices.every((idx) => parsedCorrect.includes(idx));
+      selectedIndices.length === shuffledCorrect.length &&
+      selectedIndices.every((idx) => shuffledCorrect.includes(idx));
     setCardStats((prev) => ({
       ...prev,
       [currentQ.id]: isCorrect ? 'correct' : 'incorrect',
@@ -176,10 +184,10 @@ function LearnFlashcardPage() {
 
   const isUserCorrect =
     isSubmitted &&
-    selectedIndices.length === parsedCorrect.length &&
-    selectedIndices.every((idx) => parsedCorrect.includes(idx));
+    selectedIndices.length === shuffledCorrect.length &&
+    selectedIndices.every((idx) => shuffledCorrect.includes(idx));
 
-  const correctOptionLabels = parsedCorrect
+  const correctOptionLabels = shuffledCorrect
     .map((idx) => `Option ${String.fromCharCode(65 + idx)}`)
     .join(', ');
 
@@ -313,9 +321,9 @@ function LearnFlashcardPage() {
 
             {/* Interactive Options */}
             <div className="space-y-2.5">
-              {parsedOptions.map((option, idx) => {
+              {shuffledOptions.map((option, idx) => {
                 const isSelected = selectedIndices.includes(idx);
-                const isCorrectOption = parsedCorrect.includes(idx);
+                const isCorrectOption = shuffledCorrect.includes(idx);
 
                 let optionStyle = 'border-border bg-card hover:bg-muted/40 text-foreground';
 
