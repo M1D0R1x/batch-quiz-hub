@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/quiz/run/$attemptId")({
 });
 
 function QuizRun() {
-  const { attemptId } = useParams({ from: "/_authenticated/quiz/run/$attemptId" });
+  const { attemptId } = Route.useParams();
   const nav = useNavigate();
   const loadFn = useServerFn(getActiveAttempt);
   const submitFn = useServerFn(submitAttempt);
@@ -57,6 +57,34 @@ function QuizRun() {
   const [visited, setVisited] = useState<Set<string>>(new Set());
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const submittedRef = useRef(false);
+
+  const questions = q.data?.questions ?? [];
+  const current = questions[idx];
+  const isSimulate = q.data?.attempt.is_simulate;
+  const answered = useMemo(() => new Set(Object.keys(answers).filter((k) => (answers[k] ?? []).length > 0)), [answers]);
+  const unanswered = useMemo(() => questions.filter((item: any) => !answered.has(item.id)).length, [questions, answered]);
+
+  const { shuffledOptions, mapShuffledToOriginal, mapOriginalToShuffled } = useMemo(() => {
+    if (!current?.id || !current?.options) return { shuffledOptions: [], mapShuffledToOriginal: [], mapOriginalToShuffled: [] };
+    const rawOpts = Array.isArray(current.options) ? current.options : (typeof current.options === 'string' ? JSON.parse(current.options) : []);
+    return getShuffledOptions(current.id, rawOpts, attemptId);
+  }, [current?.id, current?.options, attemptId]);
+
+  const isMsq =
+    current?.type === 'msq' ||
+    current?.question_type === 'msq' ||
+    (current?.correct_option_count ?? 1) > 1 ||
+    (Array.isArray(current?.correct_answers) && current.correct_answers.length > 1);
+
+  const submit = useMutation({
+    mutationFn: () =>
+      submitFn({ data: { attemptId, answers, flagged: Array.from(flagged) } }),
+    onSuccess: () => nav({ to: "/quiz/results/$attemptId", params: { attemptId } }),
+    onError: (e: any) => {
+      submittedRef.current = false;
+      toast.error(e.message ?? "Submit failed");
+    },
+  });
 
   useEffect(() => {
     if (!q.data) return;
@@ -99,10 +127,10 @@ function QuizRun() {
 
   // Track visited questions whenever idx changes
   useEffect(() => {
-    const questions = q.data?.questions ?? [];
-    const current = questions[idx];
-    if (current) {
-      setVisited((prev) => new Set(prev).add(current.id));
+    const questionsList = q.data?.questions ?? [];
+    const currentQ = questionsList[idx];
+    if (currentQ) {
+      setVisited((prev) => new Set(prev).add(currentQ.id));
     }
   }, [idx, q.data?.questions]);
 
@@ -125,22 +153,6 @@ function QuizRun() {
     return () => clearTimeout(timer);
   }, [q.data, answers, flagged, idx]);
 
-  const submit = useMutation({
-    mutationFn: () =>
-      submitFn({ data: { attemptId, answers, flagged: Array.from(flagged) } }),
-    onSuccess: () => nav({ to: "/quiz/results/$attemptId", params: { attemptId } }),
-    onError: (e: any) => {
-      submittedRef.current = false;
-      toast.error(e.message ?? "Submit failed");
-    },
-  });
-
-  const questions = q.data?.questions ?? [];
-  const current = questions[idx];
-  const isSimulate = q.data?.attempt.is_simulate;
-  const answered = useMemo(() => new Set(Object.keys(answers).filter((k) => (answers[k] ?? []).length > 0)), [answers]);
-  const unanswered = questions.filter((q: any) => !answered.has(q.id)).length;
-
   function setAnswer(qid: string, val: number[]) {
     setAnswers((prev) => ({ ...prev, [qid]: val }));
   }
@@ -157,10 +169,10 @@ function QuizRun() {
 
       if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
         const optIdx = Number(e.key) - 1;
-        if (optIdx < current.options.length) {
-          const isMsq = current.type === 'msq';
+        if (optIdx < (current.options?.length ?? 0)) {
+          const isMsqQ = current.type === 'msq';
           const picked = answers[current.id] ?? [];
-          if (!isMsq) {
+          if (!isMsqQ) {
             setAnswer(current.id, [optIdx]);
           } else {
             const next = picked.includes(optIdx)
@@ -224,17 +236,6 @@ function QuizRun() {
     return base;
   }
 
-  const isMsq =
-    current.type === 'msq' ||
-    current.question_type === 'msq' ||
-    (current.correct_option_count ?? 1) > 1 ||
-    (Array.isArray(current.correct_answers) && current.correct_answers.length > 1);
-
-  const { shuffledOptions, mapShuffledToOriginal, mapOriginalToShuffled } = useMemo(() => {
-    if (!current?.id || !current?.options) return { shuffledOptions: [], mapShuffledToOriginal: [], mapOriginalToShuffled: [] };
-    return getShuffledOptions(current.id, current.options, attemptId);
-  }, [current?.id, current?.options, attemptId]);
-
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -288,6 +289,7 @@ function QuizRun() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle>Question Navigator</SheetTitle>
+                <SheetDescription className="sr-only">Question navigator and overview</SheetDescription>
               </SheetHeader>
               {/* Legend */}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">

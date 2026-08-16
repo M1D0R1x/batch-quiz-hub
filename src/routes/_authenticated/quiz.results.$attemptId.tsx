@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/quiz/results/$attemptId")(
 });
 
 function Results() {
-  const { attemptId } = useParams({ from: "/_authenticated/quiz/results/$attemptId" });
+  const { attemptId } = Route.useParams();
   const navigate = useNavigate();
   const { isEldenRing } = useEldenRing();
   const fn = useServerFn(getAttemptResult);

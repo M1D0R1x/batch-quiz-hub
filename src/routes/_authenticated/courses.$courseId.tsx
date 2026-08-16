@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/courses/$courseId")({
 });
 
 function CoursePage() {
-  const { courseId } = useParams({ from: "/_authenticated/courses/$courseId" });
+  const { courseId } = Route.useParams();
   const nav = useNavigate();
   const queryClient = useQueryClient();
   const fn = useServerFn(getCourseDetail);
