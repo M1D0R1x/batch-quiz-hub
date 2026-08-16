@@ -338,12 +338,12 @@ function QuizRun() {
               {isMsq ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs uppercase tracking-wide font-bold text-amber-500">
                   <CheckSquare className="w-3.5 h-3.5" />
-                  Multiple answers (MSQ - Checkboxes)
+                  Multiple answers
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-3 py-1 text-xs uppercase tracking-wide font-bold text-sky-400">
                   <Circle className="w-3.5 h-3.5" />
-                  Single answer (MCQ - Radio Circles)
+                  Single answer
                 </span>
               )}
               <span className="text-xs text-muted-foreground font-medium">
