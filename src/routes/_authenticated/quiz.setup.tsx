@@ -389,19 +389,24 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
           </div>
         )}
 
-        <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-          {steps.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <span
-                className={`grid h-6 w-6 place-items-center rounded-full text-[10px] font-semibold ${
-                  i <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                {i + 1}
-              </span>
-              {i < steps.length - 1 && <span className="h-px w-6 bg-border" />}
-            </div>
-          ))}
+        <div className="mb-6 space-y-2">
+          <div className="flex flex-wrap items-center gap-y-2">
+            {steps.map((s, i) => (
+              <div key={s} className="flex items-center">
+                <span
+                  className={`grid h-6 w-6 place-items-center rounded-full text-[10px] font-semibold shrink-0 ${
+                    i <= step ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                {i < steps.length - 1 && <span className="h-px w-4 bg-border shrink-0" />}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Step {step + 1} of {steps.length}: <span className="font-semibold text-foreground">{steps[step]}</span>
+          </p>
         </div>
 
         <div className="card-elevated p-6 animate-fade-up">
