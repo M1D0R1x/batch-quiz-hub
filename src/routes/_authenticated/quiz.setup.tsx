@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Target } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Target, Info, CheckCircle2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
