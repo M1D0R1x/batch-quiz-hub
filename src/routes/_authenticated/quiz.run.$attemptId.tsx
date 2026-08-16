@@ -432,7 +432,7 @@ function QuizRun() {
                             : [...picked, origIdx].sort((a: number, b: number) => a - b);
                           setAnswer(current.id, next);
                         }}
-                        className="mt-0.5 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                        className="mt-0.5 rounded-[4px] border-2 border-amber-500/70 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 data-[state=checked]:text-amber-950"
                       />
                       <span className="text-sm leading-relaxed">{opt}</span>
                     </label>
