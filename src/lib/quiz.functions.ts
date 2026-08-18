@@ -723,6 +723,18 @@ export const startWeakAreaAttempt = createServerFn({ method: "POST" })
 export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Verify admin role
+    const { data: roleData } = await context.supabase
+      .from("user_roles" as any)
+      .select("role")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    const isAdmin = roleData?.role === "super_admin" || roleData?.role === "admin";
+    if (!isAdmin) {
+      throw new Error("Smart Exam Engine is restricted to administrators.");
+    }
+
     // 1. Fetch all available courses & subtopics
     const { data: allCourses } = await context.supabase
       .from("courses")

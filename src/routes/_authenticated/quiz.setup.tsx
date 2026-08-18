@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { listCourses, startAttempt, getInProgressAttempts, discardAttempt, startSmartExamEngineAttempt } from "@/lib/quiz.functions";
+import { getMyRole } from "@/lib/admin.functions";
 
 export const searchSchema = z.object({
   courseId: z.string().optional().catch(undefined),
@@ -52,6 +53,12 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
   const inProgressFn = useServerFn(getInProgressAttempts);
   const discardFn = useServerFn(discardAttempt);
   const smartEngineFn = useServerFn(startSmartExamEngineAttempt);
+  const roleFn = useServerFn(getMyRole);
+
+  const { data: roleInfo } = useQuery({
+    queryKey: ["myRole"],
+    queryFn: () => roleFn(),
+  });
 
   const smartEngineMutation = useMutation({
     mutationFn: () => smartEngineFn(),
@@ -162,186 +169,190 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
-        {/* 🔥 Smart Exam Engine Banner */}
-        <div className="mb-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-5 sm:p-6 shadow-xl relative animate-fade-up">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-            <div className="space-y-2 max-w-xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  High-Likelihood Certification Simulator
+        {/* 🔥 Smart Exam Engine Banner (Admin Only) */}
+        {roleInfo?.isAdmin && (
+          <>
+            <div className="mb-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-5 sm:p-6 shadow-xl relative animate-fade-up">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+                <div className="space-y-2 max-w-xl">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold uppercase tracking-wider">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      High-Likelihood Certification Simulator
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBlueprintDialog(true)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/90 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border text-[11px] font-medium transition-all shadow-sm cursor-pointer"
+                    >
+                      <Info className="w-3.5 h-3.5 text-primary" />
+                      Estimated Questions Info
+                    </button>
+                  </div>
+
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                    🔥 Smart Exam Engine (50 High-Likelihood Qs)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    Algorithmically samples 50 high-priority questions strictly focused across your 5 core chapters, weighted by scenario complexity, MSQ difficulty, and exam blueprint frequencies.
+                  </p>
+
+                  {/* Blueprint Domain Pills */}
+                  <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                    <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-sky-400" /> APEX: 15 Qs
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" /> XML: 12 Qs
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" /> Vector Search: 10 Qs
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-purple-400" /> Data Science: 7 Qs
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-indigo-400" /> AI Agent Studio: 6 Qs
+                    </span>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowBlueprintDialog(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/90 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border text-[11px] font-medium transition-all shadow-sm cursor-pointer"
-                >
-                  <Info className="w-3.5 h-3.5 text-primary" />
-                  Estimated Questions Info
-                </button>
-              </div>
 
-              <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
-                🔥 Smart Exam Engine (50 High-Likelihood Qs)
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Algorithmically samples 50 high-priority questions strictly focused across your 5 core chapters, weighted by scenario complexity, MSQ difficulty, and exam blueprint frequencies.
-              </p>
-
-              {/* Blueprint Domain Pills */}
-              <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
-                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-sky-400" /> APEX: 15 Qs
-                </span>
-                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" /> XML: 12 Qs
-                </span>
-                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> Vector Search: 10 Qs
-                </span>
-                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" /> Data Science: 7 Qs
-                </span>
-                <span className="px-2.5 py-1 rounded-md bg-secondary/80 border border-border text-foreground font-medium flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-indigo-400" /> AI Agent Studio: 6 Qs
-                </span>
+                <div className="shrink-0 pt-2 md:pt-0">
+                  <Button
+                    size="lg"
+                    disabled={smartEngineMutation.isPending}
+                    onClick={() => smartEngineMutation.mutate()}
+                    className="w-full sm:w-auto h-12 px-6 gap-2 text-sm font-bold shadow-lg bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:opacity-95 text-primary-foreground cursor-pointer"
+                  >
+                    {smartEngineMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Assembling 50 Qs...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 fill-primary-foreground" />
+                        Launch Smart Exam (50 Qs)
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <div className="shrink-0 pt-2 md:pt-0">
-              <Button
-                size="lg"
-                disabled={smartEngineMutation.isPending}
-                onClick={() => smartEngineMutation.mutate()}
-                className="w-full sm:w-auto h-12 px-6 gap-2 text-sm font-bold shadow-lg bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:opacity-95 text-primary-foreground cursor-pointer"
-              >
-                {smartEngineMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Assembling 50 Qs...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4 fill-primary-foreground" />
-                    Launch Smart Exam (50 Qs)
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+            {/* Blueprint Info Modal */}
+            <AlertDialog open={showBlueprintDialog} onOpenChange={setShowBlueprintDialog}>
+              <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    MCQ2 Smart Exam Blueprint Breakdown
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs text-muted-foreground">
+                    Exact estimated questions, domain weights, and algorithmic prioritization criteria for the 50-question mock exam.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
 
-        {/* Blueprint Info Modal */}
-        <AlertDialog open={showBlueprintDialog} onOpenChange={setShowBlueprintDialog}>
-          <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2 text-lg font-bold">
-                <Sparkles className="w-5 h-5 text-primary" />
-                MCQ2 Smart Exam Blueprint Breakdown
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-xs text-muted-foreground">
-                Exact estimated questions, domain weights, and algorithmic prioritization criteria for the 50-question mock exam.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+                <div className="mt-4 space-y-4 text-xs">
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead className="bg-secondary/60 text-muted-foreground font-semibold border-b border-border">
+                        <tr>
+                          <th className="p-2.5">Course / Domain</th>
+                          <th className="p-2.5 text-center">Bank Pool</th>
+                          <th className="p-2.5 text-center">Exam Allocation</th>
+                          <th className="p-2.5 text-center">Exam Weight</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        <tr className="hover:bg-muted/30">
+                          <td className="p-2.5 font-medium flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-sky-400" />
+                            Oracle APEX Developer Professional
+                          </td>
+                          <td className="p-2.5 text-center text-muted-foreground">81 Qs (30.1%)</td>
+                          <td className="p-2.5 text-center font-bold text-foreground">15 Qs</td>
+                          <td className="p-2.5 text-center font-semibold text-primary">30%</td>
+                        </tr>
+                        <tr className="hover:bg-muted/30">
+                          <td className="p-2.5 font-medium flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            XML (Schemas, XPath, XSLT)
+                          </td>
+                          <td className="p-2.5 text-center text-muted-foreground">75 Qs (27.9%)</td>
+                          <td className="p-2.5 text-center font-bold text-foreground">12 Qs</td>
+                          <td className="p-2.5 text-center font-semibold text-primary">24%</td>
+                        </tr>
+                        <tr className="hover:bg-muted/30">
+                          <td className="p-2.5 font-medium flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            Oracle AI Vector Search
+                          </td>
+                          <td className="p-2.5 text-center text-muted-foreground">50 Qs (18.6%)</td>
+                          <td className="p-2.5 text-center font-bold text-foreground">10 Qs</td>
+                          <td className="p-2.5 text-center font-semibold text-primary">20%</td>
+                        </tr>
+                        <tr className="hover:bg-muted/30">
+                          <td className="p-2.5 font-medium flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-purple-400" />
+                            OCI Data Science Professional
+                          </td>
+                          <td className="p-2.5 text-center text-muted-foreground">33 Qs (12.3%)</td>
+                          <td className="p-2.5 text-center font-bold text-foreground">7 Qs</td>
+                          <td className="p-2.5 text-center font-semibold text-primary">14%</td>
+                        </tr>
+                        <tr className="hover:bg-muted/30">
+                          <td className="p-2.5 font-medium flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                            Oracle AI Agent Studio for Fusion
+                          </td>
+                          <td className="p-2.5 text-center text-muted-foreground">30 Qs (11.1%)</td>
+                          <td className="p-2.5 text-center font-bold text-foreground">6 Qs</td>
+                          <td className="p-2.5 text-center font-semibold text-primary">12%</td>
+                        </tr>
+                        <tr className="bg-primary/10 font-bold">
+                          <td className="p-2.5">Total Exam Simulation</td>
+                          <td className="p-2.5 text-center">269 Qs (100%)</td>
+                          <td className="p-2.5 text-center text-primary font-bold">50 Questions</td>
+                          <td className="p-2.5 text-center text-primary">100%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-            <div className="mt-4 space-y-4 text-xs">
-              <div className="rounded-xl border border-border overflow-hidden">
-                <table className="w-full text-left">
-                  <thead className="bg-secondary/60 text-muted-foreground font-semibold border-b border-border">
-                    <tr>
-                      <th className="p-2.5">Course / Domain</th>
-                      <th className="p-2.5 text-center">Bank Pool</th>
-                      <th className="p-2.5 text-center">Exam Allocation</th>
-                      <th className="p-2.5 text-center">Exam Weight</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    <tr className="hover:bg-muted/30">
-                      <td className="p-2.5 font-medium flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-sky-400" />
-                        Oracle APEX Developer Professional
-                      </td>
-                      <td className="p-2.5 text-center text-muted-foreground">81 Qs (30.1%)</td>
-                      <td className="p-2.5 text-center font-bold text-foreground">15 Qs</td>
-                      <td className="p-2.5 text-center font-semibold text-primary">30%</td>
-                    </tr>
-                    <tr className="hover:bg-muted/30">
-                      <td className="p-2.5 font-medium flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        XML (Schemas, XPath, XSLT)
-                      </td>
-                      <td className="p-2.5 text-center text-muted-foreground">75 Qs (27.9%)</td>
-                      <td className="p-2.5 text-center font-bold text-foreground">12 Qs</td>
-                      <td className="p-2.5 text-center font-semibold text-primary">24%</td>
-                    </tr>
-                    <tr className="hover:bg-muted/30">
-                      <td className="p-2.5 font-medium flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                        Oracle AI Vector Search
-                      </td>
-                      <td className="p-2.5 text-center text-muted-foreground">50 Qs (18.6%)</td>
-                      <td className="p-2.5 text-center font-bold text-foreground">10 Qs</td>
-                      <td className="p-2.5 text-center font-semibold text-primary">20%</td>
-                    </tr>
-                    <tr className="hover:bg-muted/30">
-                      <td className="p-2.5 font-medium flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-purple-400" />
-                        OCI Data Science Professional
-                      </td>
-                      <td className="p-2.5 text-center text-muted-foreground">33 Qs (12.3%)</td>
-                      <td className="p-2.5 text-center font-bold text-foreground">7 Qs</td>
-                      <td className="p-2.5 text-center font-semibold text-primary">14%</td>
-                    </tr>
-                    <tr className="hover:bg-muted/30">
-                      <td className="p-2.5 font-medium flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                        Oracle AI Agent Studio for Fusion
-                      </td>
-                      <td className="p-2.5 text-center text-muted-foreground">30 Qs (11.1%)</td>
-                      <td className="p-2.5 text-center font-bold text-foreground">6 Qs</td>
-                      <td className="p-2.5 text-center font-semibold text-primary">12%</td>
-                    </tr>
-                    <tr className="bg-primary/10 font-bold">
-                      <td className="p-2.5">Total Exam Simulation</td>
-                      <td className="p-2.5 text-center">269 Qs (100%)</td>
-                      <td className="p-2.5 text-center text-primary font-bold">50 Questions</td>
-                      <td className="p-2.5 text-center text-primary">100%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                  <div className="rounded-lg bg-secondary/40 p-3 border border-border/60 space-y-1.5">
+                    <h4 className="font-semibold text-foreground flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      Likelihood Prioritization Formula:
+                    </h4>
+                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                      <li><strong>Real-world scenarios</strong> (&quot;As an AI architect...&quot;, &quot;You are configuring...&quot;) receive <strong>+3.0 Priority</strong>.</li>
+                      <li><strong>Multi-Answer MSQs</strong> (testing comprehensive technical recall) receive <strong>+2.0 Priority</strong>.</li>
+                      <li><strong>High-yield exam topics</strong> (HNSW, XSLT, REST Data Sources, MLOps, Multi-agent tools) receive <strong>+2.0 Priority</strong>.</li>
+                      <li><strong>Unseen questions</strong> receive <strong>+4.0 Freshness Boost</strong> so 100% of all 269 questions rotate over 3–5 attempts!</li>
+                    </ul>
+                  </div>
+                </div>
 
-              <div className="rounded-lg bg-secondary/40 p-3 border border-border/60 space-y-1.5">
-                <h4 className="font-semibold text-foreground flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Likelihood Prioritization Formula:
-                </h4>
-                <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                  <li><strong>Real-world scenarios</strong> (&quot;As an AI architect...&quot;, &quot;You are configuring...&quot;) receive <strong>+3.0 Priority</strong>.</li>
-                  <li><strong>Multi-Answer MSQs</strong> (testing comprehensive technical recall) receive <strong>+2.0 Priority</strong>.</li>
-                  <li><strong>High-yield exam topics</strong> (HNSW, XSLT, REST Data Sources, MLOps, Multi-agent tools) receive <strong>+2.0 Priority</strong>.</li>
-                  <li><strong>Unseen questions</strong> receive <strong>+4.0 Freshness Boost</strong> so 100% of all 269 questions rotate over 3–5 attempts!</li>
-                </ul>
-              </div>
-            </div>
-
-            <AlertDialogFooter className="mt-4 flex flex-col sm:flex-row gap-2">
-              <AlertDialogCancel onClick={() => setShowBlueprintDialog(false)} className="cursor-pointer">
-                Close
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setShowBlueprintDialog(false);
-                  smartEngineMutation.mutate();
-                }}
-                className="bg-primary text-primary-foreground font-semibold cursor-pointer"
-              >
-                <Zap className="w-4 h-4 mr-1.5 fill-primary-foreground" />
-                Launch Smart Exam Now (50 Qs)
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <AlertDialogFooter className="mt-4 flex flex-col sm:flex-row gap-2">
+                  <AlertDialogCancel onClick={() => setShowBlueprintDialog(false)} className="cursor-pointer">
+                    Close
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      setShowBlueprintDialog(false);
+                      smartEngineMutation.mutate();
+                    }}
+                    className="bg-primary text-primary-foreground font-semibold cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 mr-1.5 fill-primary-foreground" />
+                    Launch Smart Exam Now (50 Qs)
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        )}
 
         {existingAttempt && (
           <div className="mb-6 rounded-2xl border border-amber-500/30 bg-card p-4 sm:p-5 shadow-sm animate-fade-up">
