@@ -54,7 +54,7 @@ function AdminQuestionsPage() {
   });
 
   const createQuestionMutation = useMutation({
-    mutationFn: (data: Parameters<typeof adminCreateQuestion>[0]['data']) => createQuestionFn({ data }),
+    mutationFn: (data: any) => createQuestionFn({ data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminQuestions'] });
       toast.success('Question added successfully');
@@ -281,9 +281,9 @@ function AdminQuestionsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {questions.map((q, idx) => {
-            const parsedOptions: string[] = Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]');
-            const parsedCorrect: number[] = Array.isArray(q.correct_answers) ? q.correct_answers : JSON.parse(q.correct_answers || '[]');
+          {questions.map((q: any, idx) => {
+            const parsedOptions: string[] = Array.isArray(q.options) ? (q.options as string[]) : (typeof q.options === 'string' ? JSON.parse(q.options) : []);
+            const parsedCorrect: number[] = Array.isArray(q.correct_answers) ? (q.correct_answers as number[]) : (typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : []);
 
             return (
               <div

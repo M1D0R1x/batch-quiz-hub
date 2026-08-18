@@ -10,7 +10,7 @@ export const getLeaderboard = createServerFn({ method: "GET" })
         category: z.enum(["avg_score", "streak", "total_quizzes"]).default("avg_score"),
         period: z.enum(["all_time", "weekly"]).default("all_time"),
       })
-      .default({})
+      .default({ category: "avg_score", period: "all_time" })
       .parse(d ?? {})
   )
   .handler(async ({ data, context }) => {

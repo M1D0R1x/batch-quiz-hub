@@ -102,7 +102,9 @@ export function TeamCredits() {
                       <h3 className="font-bold text-foreground text-base truncate flex items-center gap-1.5">
                         {member.name}
                         {member.highlight && (
-                          <ShieldCheck className="h-4 w-4 text-primary fill-primary/20" title="Creator & Developer" />
+                          <span title="Creator & Developer">
+                            <ShieldCheck className="h-4 w-4 text-primary fill-primary/20" />
+                          </span>
                         )}
                       </h3>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${member.badgeColor}`}>

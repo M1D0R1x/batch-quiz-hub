@@ -5,16 +5,17 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const getMyRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
+    const { data } = await (context.supabase
       .from("user_roles" as any)
       .select("role")
       .eq("user_id", context.userId)
-      .maybeSingle();
+      .maybeSingle() as any);
 
+    const role = data?.role || "user";
     return {
-      role: data?.role || "user",
-      isAdmin: data?.role === "super_admin" || data?.role === "admin",
-      isSuperAdmin: data?.role === "super_admin",
+      role,
+      isAdmin: role === "super_admin" || role === "admin",
+      isSuperAdmin: role === "super_admin",
     };
   });
 

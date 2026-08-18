@@ -703,7 +703,7 @@ export const startWeakAreaAttempt = createServerFn({ method: "POST" })
       .from("quiz_attempts")
       .insert({
         user_id: context.userId,
-        course_id: fallbackCourseId,
+        course_id: fallbackCourseId || '',
         subtopic_ids: subtopicIds,
         question_ids: selected.map((q) => q.id),
         question_count: selected.length,
@@ -724,11 +724,11 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     // Verify admin role
-    const { data: roleData } = await context.supabase
+    const { data: roleData } = await (context.supabase
       .from("user_roles" as any)
       .select("role")
       .eq("user_id", context.userId)
-      .maybeSingle();
+      .maybeSingle() as any);
 
     const isAdmin = roleData?.role === "super_admin" || roleData?.role === "admin";
     if (!isAdmin) {
@@ -902,7 +902,7 @@ export const startSmartExamEngineAttempt = createServerFn({ method: "POST" })
     }
 
     const finalShuffled = [...selectedQuestions].sort(() => Math.random() - 0.5);
-    const primaryCourseId = targetCourses[0]?.id;
+    const primaryCourseId = targetCourses[0]?.id || '';
 
     const { data: attempt, error: e2 } = await context.supabase
       .from("quiz_attempts")

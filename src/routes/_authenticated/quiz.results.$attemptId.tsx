@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Check, Flag, Home, RotateCcw, X, AlertTriangle, TrendingDown, BookOpen, Trophy, Target } from "lucide-react";
+import { Check, Flag, Home, RotateCcw, X, AlertTriangle, TrendingDown, BookOpen, Trophy, Target, CheckSquare, Circle } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
@@ -215,7 +215,7 @@ function Results() {
                   </div>
                   <span className="flex items-center gap-2">
                     {d.flagged && <Flag className="h-3.5 w-3.5 fill-warning text-warning" />}
-                    {hasDeduction && (
+                    {d.deduction > 0 && (
                       <span className="text-destructive flex items-center gap-0.5">
                         <AlertTriangle className="h-3 w-3" /> −{d.deduction.toFixed(2)}
                       </span>

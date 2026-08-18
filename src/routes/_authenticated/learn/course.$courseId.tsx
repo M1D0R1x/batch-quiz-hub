@@ -83,11 +83,11 @@ function LearnCoursePage() {
   const currentQ = questions[currentIndex];
 
   const parsedOptions: string[] = Array.isArray(currentQ.options)
-    ? currentQ.options
-    : JSON.parse(currentQ.options || '[]');
+    ? (currentQ.options as string[])
+    : (typeof currentQ.options === 'string' ? JSON.parse(currentQ.options) : []);
   const parsedCorrect: number[] = Array.isArray(currentQ.correct_answers)
-    ? currentQ.correct_answers
-    : JSON.parse(currentQ.correct_answers || '[]');
+    ? (currentQ.correct_answers as number[])
+    : (typeof currentQ.correct_answers === 'string' ? JSON.parse(currentQ.correct_answers) : []);
 
   const isMSQ =
     currentQ.type === 'msq' ||

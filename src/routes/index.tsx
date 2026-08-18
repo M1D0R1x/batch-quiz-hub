@@ -48,7 +48,7 @@ function Landing() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button asChild variant="ghost">
-            <Link to="/auth">Sign in</Link>
+            <Link to="/auth" search={{ tab: "signin" }}>Sign in</Link>
           </Button>
           <Button asChild>
             <Link to="/auth" search={{ tab: "signup" }}>Get started</Link>
@@ -78,7 +78,7 @@ function Landing() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/auth">Sign in</Link>
+              <Link to="/auth" search={{ tab: "signin" }}>Sign in</Link>
             </Button>
           </div>
         </section>

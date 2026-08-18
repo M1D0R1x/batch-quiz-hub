@@ -19,8 +19,7 @@ export const updateProfile = createServerFn({ method: "POST" })
     if (data.avatarPreset !== undefined) update.avatar_preset = data.avatarPreset;
     if (data.showOnLeaderboard !== undefined) update.show_on_leaderboard = data.showOnLeaderboard;
 
-    const { error } = await context.supabase
-      .from("profiles")
+    const { error } = await (context.supabase.from("profiles" as any) as any)
       .update(update)
       .eq("id", context.userId);
 

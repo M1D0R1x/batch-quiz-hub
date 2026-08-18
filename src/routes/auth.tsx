@@ -12,8 +12,8 @@ import { signUp, signIn } from "@/lib/auth.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab: (search.tab === "signup" ? "signup" : "signin") as "signin" | "signup",
+  validateSearch: (search: Record<string, unknown>): { tab?: "signin" | "signup" } => ({
+    tab: search.tab === "signup" ? "signup" : "signin",
   }),
   head: () => ({
     meta: [
@@ -33,7 +33,7 @@ function AuthPage() {
   const signUpFn = useServerFn(signUp);
   const signInFn = useServerFn(signIn);
   const { tab } = useSearch({ from: "/auth" });
-  const [mode, setMode] = useState<"signin" | "signup">(tab);
+  const [mode, setMode] = useState<"signin" | "signup">(tab ?? "signin");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");

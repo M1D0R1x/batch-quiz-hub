@@ -40,31 +40,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_preset: string | null
           avatar_url: string | null
+          contact_email: string | null
           course_track_id: string | null
           created_at: string
           display_name: string | null
           id: string
           onboarded_at: string | null
+          show_on_leaderboard: boolean | null
           updated_at: string
+          username: string | null
         }
         Insert: {
+          avatar_preset?: string | null
           avatar_url?: string | null
+          contact_email?: string | null
           course_track_id?: string | null
           created_at?: string
           display_name?: string | null
           id: string
           onboarded_at?: string | null
+          show_on_leaderboard?: boolean | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
+          avatar_preset?: string | null
           avatar_url?: string | null
+          contact_email?: string | null
           course_track_id?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
           onboarded_at?: string | null
+          show_on_leaderboard?: boolean | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -129,6 +141,7 @@ export type Database = {
           id: string
           is_simulate: boolean
           max_score: number | null
+          negative_marking: number | null
           question_count: number
           question_ids: string[]
           score: number | null
@@ -144,6 +157,7 @@ export type Database = {
           id?: string
           is_simulate?: boolean
           max_score?: number | null
+          negative_marking?: number | null
           question_count: number
           question_ids?: string[]
           score?: number | null
@@ -159,6 +173,7 @@ export type Database = {
           id?: string
           is_simulate?: boolean
           max_score?: number | null
+          negative_marking?: number | null
           question_count?: number
           question_ids?: string[]
           score?: number | null
@@ -205,6 +220,62 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_learn_progress: {
+        Row: {
+          created_at: string
+          id: string
+          is_learned: boolean
+          question_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_learned?: boolean
+          question_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_learned?: boolean
+          question_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learn_progress_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
             referencedColumns: ["id"]
           },
         ]

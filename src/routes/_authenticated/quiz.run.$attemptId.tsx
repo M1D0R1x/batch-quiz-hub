@@ -73,8 +73,8 @@ function QuizRun() {
   const isMsq =
     current?.type === 'msq' ||
     current?.question_type === 'msq' ||
-    (current?.correct_option_count ?? 1) > 1 ||
-    (Array.isArray(current?.correct_answers) && current.correct_answers.length > 1);
+    ((current as any)?.correct_option_count ?? 1) > 1 ||
+    (Array.isArray((current as any)?.correct_answers) && (current as any).correct_answers.length > 1);
 
   const submit = useMutation({
     mutationFn: () =>

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
     const session = await getSessionUser();
-    if (!session?.userId) throw redirect({ to: "/auth" });
+    if (!session?.userId) throw redirect({ to: "/auth", search: { tab: "signin" } });
 
     // Enforce onboarding on first login only if user has never set a display name and has no onboarded_at.
     if (location.pathname !== "/onboarding") {
