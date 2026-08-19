@@ -2,11 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles, Pause, Trash2 } from "lucide-react";
+import { BarChart3, Flame, Play, Timer, TrendingDown, TrendingUp, GraduationCap, Trophy, ShieldAlert, Target, Zap, ArrowRight, Sparkles, Pause, Trash2, Lock, Unlock } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts, discardAttempt } from "@/lib/quiz.functions";
+import { getDashboardStats, listCourses, getMyProfile, getWeakAreaStats, startWeakAreaAttempt, getInProgressAttempts, discardAttempt, updateMcq1Toggle } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
 import { TeamCredits } from "@/components/team-credits";
 
@@ -33,6 +33,7 @@ function Dashboard() {
   const startWeakFn = useServerFn(startWeakAreaAttempt);
   const inProgressFn = useServerFn(getInProgressAttempts);
   const discardFn = useServerFn(discardAttempt);
+  const mcq1Fn = useServerFn(updateMcq1Toggle);
 
   const me = useQuery({ queryKey: ["me"], queryFn: () => meFn() });
   const stats = useQuery({ queryKey: ["dashboard-stats"], queryFn: () => statsFn() });
@@ -53,6 +54,16 @@ function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['in-progress-attempts'] });
     },
     onError: (e: any) => toast.error(e.message ?? "Failed to discard attempt"),
+  });
+
+  const mcq1ToggleMutation = useMutation({
+    mutationFn: (showMcq1: boolean) => mcq1Fn({ data: { showMcq1 } }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      toast.success(res.showMcq1 ? "MCQ1 courses unlocked!" : "MCQ1 courses hidden.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update MCQ1 access"),
   });
 
   const startWeakMutation = useMutation({
@@ -98,8 +109,28 @@ function Dashboard() {
                 <Link to="/admin"><ShieldAlert className="h-4 w-4" /> Admin</Link>
               </Button>
             )}
+            {/* MCQ1 Access Toggle */}
+            <Button
+              size="lg"
+              variant="outline"
+              disabled={mcq1ToggleMutation.isPending}
+              onClick={() => mcq1ToggleMutation.mutate(!(me.data?.show_mcq1 ?? false))}
+              className={`gap-2 transition-colors ${
+                me.data?.show_mcq1
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                  : "border-muted-foreground/30 text-muted-foreground hover:text-foreground"
+              }`}
+              title={me.data?.show_mcq1 ? "MCQ1 courses are visible — click to hide" : "MCQ1 courses are hidden — click to show"}
+            >
+              {me.data?.show_mcq1 ? (
+                <><Unlock className="h-4 w-4" /> MCQ1: On</>
+              ) : (
+                <><Lock className="h-4 w-4" /> MCQ1: Off</>
+              )}
+            </Button>
           </div>
         </section>
+
 
         {/* Retest Weak-Areas Flashy Compact Banner */}
         {weakStats.data && weakStats.data.wrongCount > 0 && (

@@ -209,7 +209,7 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: profiles, error: pErr } = await context.supabase
       .from("profiles")
-      .select("id, display_name, avatar_preset, avatar_url, created_at");
+      .select("id, display_name, avatar_preset, avatar_url, created_at, show_mcq1");
     if (pErr) throw new Error(pErr.message);
 
     const { data: roles } = await context.supabase
@@ -255,4 +255,38 @@ export const adminSetUserRole = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const adminSetUserMcq1Access = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        targetUserId: z.string().uuid(),
+        showMcq1: z.boolean(),
+      })
+      .parse(d)
+  )
+  .handler(async ({ data, context }) => {
+    // Only admins can grant/revoke MCQ1 access
+    const { data: roleRecord } = await context.supabase
+      .from("user_roles" as any)
+      .select("role")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    const isAdmin =
+      (roleRecord as any)?.role === "super_admin" ||
+      (roleRecord as any)?.role === "admin";
+    if (!isAdmin) {
+      throw new Error("Forbidden: Only admins can manage MCQ1 access.");
+    }
+
+    const { error } = await (context.supabase
+      .from("profiles" as any)
+      .update({ show_mcq1: data.showMcq1 } as any)
+      .eq("id", data.targetUserId) as any);
+
+    if (error) throw new Error(error.message);
+    return { ok: true, showMcq1: data.showMcq1 };
   });

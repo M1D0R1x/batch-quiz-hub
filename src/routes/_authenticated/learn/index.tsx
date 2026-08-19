@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { listCourses } from '@/lib/quiz.functions';
+import { listCourses, updateMcq1Toggle, getMyProfile } from '@/lib/quiz.functions';
 import { AppHeader } from '@/components/app-header';
-import { BookOpen, GraduationCap, ArrowRight, ChevronRight, Layers, ChevronDown, PlayCircle, Sparkles, Search } from 'lucide-react';
+import { BookOpen, GraduationCap, ArrowRight, ChevronRight, Layers, ChevronDown, PlayCircle, Sparkles, Search, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_authenticated/learn/')({
   head: () => ({
@@ -21,11 +22,29 @@ export const Route = createFileRoute('/_authenticated/learn/')({
 
 function LearnOverviewPage() {
   const listCoursesFn = useServerFn(listCourses);
+  const meFn = useServerFn(getMyProfile);
+  const mcq1Fn = useServerFn(updateMcq1Toggle);
+  const queryClient = useQueryClient();
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['courses'],
     queryFn: () => listCoursesFn(),
+  });
+
+  const { data: meData } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => meFn(),
+  });
+
+  const mcq1ToggleMutation = useMutation({
+    mutationFn: (showMcq1: boolean) => mcq1Fn({ data: { showMcq1 } }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      toast.success(res.showMcq1 ? 'MCQ1 courses unlocked!' : 'MCQ1 courses hidden.');
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to update MCQ1 access'),
   });
 
   const toggleExpand = (courseId: string) => {
@@ -77,16 +96,37 @@ function LearnOverviewPage() {
             Study entire courses with randomized flashcards or drill down into specific chapters.
           </p>
 
-          {/* Search bar */}
-          <div className="relative max-w-md pt-2">
-            <Search className="absolute left-3.5 top-5 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="text"
-              placeholder="Search courses & chapters..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10 text-sm w-full bg-card"
-            />
+          {/* Search bar + MCQ1 Toggle row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Search courses & chapters..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-10 text-sm w-full bg-card"
+              />
+            </div>
+            {/* MCQ1 Access Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={mcq1ToggleMutation.isPending}
+              onClick={() => mcq1ToggleMutation.mutate(!(meData?.show_mcq1 ?? false))}
+              className={`gap-2 h-10 px-4 shrink-0 transition-colors ${
+                meData?.show_mcq1
+                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title={meData?.show_mcq1 ? 'MCQ1 courses visible — click to hide' : 'MCQ1 courses hidden — click to show'}
+            >
+              {meData?.show_mcq1 ? (
+                <><Unlock className="h-3.5 w-3.5" /> MCQ1: On</>
+              ) : (
+                <><Lock className="h-3.5 w-3.5" /> MCQ1: Off</>
+              )}
+            </Button>
           </div>
         </div>
 

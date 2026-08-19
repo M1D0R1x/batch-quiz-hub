@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Info, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Play, Timer, AlertTriangle, Pause, Trash2, Loader2, Sparkles, Zap, Info, CheckCircle2, Lock, Unlock } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { listCourses, startAttempt, getInProgressAttempts, discardAttempt, startSmartExamEngineAttempt } from "@/lib/quiz.functions";
+import { listCourses, startAttempt, getInProgressAttempts, discardAttempt, startSmartExamEngineAttempt, updateMcq1Toggle, getMyProfile } from "@/lib/quiz.functions";
 import { getMyRole } from "@/lib/admin.functions";
 
 export const searchSchema = z.object({
@@ -54,10 +54,27 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
   const discardFn = useServerFn(discardAttempt);
   const smartEngineFn = useServerFn(startSmartExamEngineAttempt);
   const roleFn = useServerFn(getMyRole);
+  const meFn = useServerFn(getMyProfile);
+  const mcq1Fn = useServerFn(updateMcq1Toggle);
 
   const { data: roleInfo } = useQuery({
     queryKey: ["myRole"],
     queryFn: () => roleFn(),
+  });
+
+  const { data: meData } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => meFn(),
+  });
+
+  const mcq1ToggleMutation = useMutation({
+    mutationFn: (showMcq1: boolean) => mcq1Fn({ data: { showMcq1 } }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      toast.success(res.showMcq1 ? "MCQ1 courses unlocked!" : "MCQ1 courses hidden.");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update MCQ1 access"),
   });
 
   const smartEngineMutation = useMutation({
@@ -76,6 +93,7 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
     staleTime: 0,
     refetchOnMount: 'always',
   });
+
 
   const [step, setStep] = useState(0);
   const [courseId, setCourseId] = useState<string | null>(search?.courseId ?? null);
@@ -169,6 +187,43 @@ export function QuizSetupPage({ simulate }: { simulate: boolean }) {
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-8">
+
+        {/* MCQ1 Access Toggle */}
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 animate-fade-up">
+          <div className="flex items-center gap-2.5">
+            {meData?.show_mcq1 ? (
+              <Unlock className="h-4 w-4 text-emerald-500 shrink-0" />
+            ) : (
+              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+            <div>
+              <p className="text-sm font-semibold text-foreground">MCQ1 Course Access</p>
+              <p className="text-xs text-muted-foreground">
+                {meData?.show_mcq1
+                  ? "MCQ1 practice courses are visible in course selection below."
+                  : "Only MCQ2 exam courses are shown. Enable to include MCQ1 courses."}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mcq1ToggleMutation.isPending}
+            onClick={() => mcq1ToggleMutation.mutate(!(meData?.show_mcq1 ?? false))}
+            className={`shrink-0 gap-1.5 transition-colors ${
+              meData?.show_mcq1
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                : "text-muted-foreground"
+            }`}
+          >
+            {meData?.show_mcq1 ? (
+              <><Unlock className="h-3.5 w-3.5" /> On</>
+            ) : (
+              <><Lock className="h-3.5 w-3.5" /> Off</>
+            )}
+          </Button>
+        </div>
+
         {/* 🔥 Smart Exam Engine Banner (Admin Only) */}
         {roleInfo?.isAdmin && (
           <>

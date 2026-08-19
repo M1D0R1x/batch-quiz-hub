@@ -7,10 +7,25 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const listCourses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: courses, error } = await context.supabase
+    // Check if user has MCQ1 access enabled in their profile
+    const { data: profile } = await (context.supabase
+      .from("profiles" as any)
+      .select("show_mcq1")
+      .eq("id", context.userId)
+      .maybeSingle() as any);
+    const showMcq1 = profile?.show_mcq1 === true;
+
+    let courseQuery = context.supabase
       .from("courses")
-      .select("id, name, description, icon")
+      .select("id, name, description, icon, course_tier")
       .order("name");
+
+    // If user doesn't have MCQ1 access, filter to mcq2 only
+    if (!showMcq1) {
+      courseQuery = (courseQuery as any).neq("course_tier", "mcq1");
+    }
+
+    const { data: courses, error } = await courseQuery;
     if (error) throw new Error(error.message);
 
     const { data: subs, error: e2 } = await context.supabase
@@ -40,6 +55,20 @@ export const listCourses = createServerFn({ method: "GET" })
       })),
     }));
   });
+
+export const updateMcq1Toggle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ showMcq1: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await (context.supabase
+      .from("profiles" as any)
+      .update({ show_mcq1: data.showMcq1 } as any)
+      .eq("id", context.userId) as any);
+    if (error) throw new Error(error.message);
+    return { ok: true, showMcq1: data.showMcq1 };
+  });
+
+
 
 export const getCourseDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -80,7 +109,7 @@ export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase.from("profiles" as any) as any)
-      .select("id, username, contact_email, display_name, avatar_url, avatar_preset, show_on_leaderboard, course_track_id, onboarded_at")
+      .select("id, username, contact_email, display_name, avatar_url, avatar_preset, show_on_leaderboard, course_track_id, onboarded_at, show_mcq1")
       .eq("id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);

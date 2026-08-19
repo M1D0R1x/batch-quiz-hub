@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { getLearnCourseQuestions } from '@/lib/learn.functions';
 import { AppHeader } from '@/components/app-header';
-import { ArrowLeft, ChevronLeft, ChevronRight, GraduationCap, ChevronRight as BreadcrumbChevron, RotateCcw, CheckCircle2, XCircle, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, GraduationCap, ChevronRight as BreadcrumbChevron, RotateCcw, CheckCircle2, XCircle, Sparkles, BookOpen, CheckSquare, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -215,6 +215,13 @@ function LearnCoursePage() {
 
             {/* Options */}
             <div className="space-y-2.5">
+              {/* MSQ multi-select hint */}
+              {isMSQ && !isSubmitted && (
+                <p className="text-xs text-amber-500 font-medium flex items-center gap-1.5 pb-1">
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Select all correct answers ({parsedCorrect.length} correct)
+                </p>
+              )}
               {parsedOptions.map((option, idx) => {
                 const isSelected = selectedIndices.includes(idx);
                 const isCorrectOption = parsedCorrect.includes(idx);
@@ -233,6 +240,16 @@ function LearnCoursePage() {
                   optionStyle = 'border-primary bg-primary/10 text-foreground ring-1 ring-primary';
                 }
 
+                // Indicator: square (rounded-md) for MSQ, rounded-full for MCQ
+                const indicatorBase = isMSQ ? 'rounded-md' : 'rounded-full';
+                const indicatorStyle = isSubmitted && isCorrectOption
+                  ? `${indicatorBase} bg-emerald-500 text-white`
+                  : isSubmitted && isSelected && !isCorrectOption
+                  ? `${indicatorBase} bg-rose-500 text-white`
+                  : isSelected
+                  ? `${indicatorBase} bg-primary text-primary-foreground`
+                  : `${indicatorBase} bg-muted text-muted-foreground border border-border`;
+
                 return (
                   <button
                     key={idx}
@@ -241,18 +258,16 @@ function LearnCoursePage() {
                     disabled={isSubmitted}
                     className={`w-full p-4 rounded-xl border text-left transition-all duration-200 flex items-start gap-3 cursor-pointer ${optionStyle}`}
                   >
-                    <span
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                        isSubmitted && isCorrectOption
-                          ? 'bg-emerald-500 text-white'
-                          : isSubmitted && isSelected && !isCorrectOption
-                          ? 'bg-rose-500 text-white'
-                          : isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {String.fromCharCode(65 + idx)}
+                    <span className={`w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${indicatorStyle}`}>
+                      {isSubmitted && isCorrectOption ? (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      ) : isSubmitted && isSelected && !isCorrectOption ? (
+                        <XCircle className="w-3.5 h-3.5" />
+                      ) : isMSQ ? (
+                        isSelected ? <CheckSquare className="w-3.5 h-3.5" /> : <HelpCircle className="w-3 h-3 opacity-50" />
+                      ) : (
+                        String.fromCharCode(65 + idx)
+                      )}
                     </span>
                     <span className="text-sm leading-relaxed">{option}</span>
                   </button>

@@ -321,6 +321,13 @@ function LearnFlashcardPage() {
 
             {/* Interactive Options */}
             <div className="space-y-2.5">
+              {/* MSQ hint */}
+              {isMSQ && !isSubmitted && (
+                <p className="text-xs text-amber-500 font-medium flex items-center gap-1.5 pb-1">
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Select all correct answers ({shuffledCorrect.length} correct)
+                </p>
+              )}
               {shuffledOptions.map((option, idx) => {
                 const isSelected = selectedIndices.includes(idx);
                 const isCorrectOption = shuffledCorrect.includes(idx);
@@ -339,6 +346,16 @@ function LearnFlashcardPage() {
                   optionStyle = 'border-primary bg-primary/10 text-foreground ring-1 ring-primary';
                 }
 
+                // Indicator styles: square for MSQ, rounded circle for MCQ
+                const indicatorBase = isMSQ ? 'rounded-md' : 'rounded-full';
+                const indicatorStyle = isSubmitted && isCorrectOption
+                  ? `${indicatorBase} bg-emerald-500 text-white`
+                  : isSubmitted && isSelected && !isCorrectOption
+                  ? `${indicatorBase} bg-rose-500 text-white`
+                  : isSelected
+                  ? `${indicatorBase} bg-primary text-primary-foreground`
+                  : `${indicatorBase} bg-muted text-muted-foreground border border-border`;
+
                 return (
                   <button
                     key={idx}
@@ -347,18 +364,17 @@ function LearnFlashcardPage() {
                     disabled={isSubmitted}
                     className={`w-full p-3.5 rounded-xl border text-left transition-all duration-200 flex items-start gap-3 cursor-pointer ${optionStyle}`}
                   >
-                    <span
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                        isSubmitted && isCorrectOption
-                          ? 'bg-emerald-500 text-white'
-                          : isSubmitted && isSelected && !isCorrectOption
-                          ? 'bg-rose-500 text-white'
-                          : isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {String.fromCharCode(65 + idx)}
+                    {/* Checkbox/Radio indicator */}
+                    <span className={`w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${indicatorStyle}`}>
+                      {isSubmitted && isCorrectOption ? (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      ) : isSubmitted && isSelected && !isCorrectOption ? (
+                        <XCircle className="w-3.5 h-3.5" />
+                      ) : isMSQ ? (
+                        isSelected ? <CheckSquare className="w-3.5 h-3.5" /> : <HelpCircle className="w-3 h-3 opacity-50" />
+                      ) : (
+                        String.fromCharCode(65 + idx)
+                      )}
                     </span>
                     <span className="text-sm leading-relaxed">{option}</span>
                   </button>
